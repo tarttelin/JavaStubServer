@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+version = '0.1'
+
+sourceSets {
+    main { java { srcDirs = ["src"]  } }
+    test { java { srcDirs = ["test"] } }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "javax.servlet:servlet-api:2.5", "org.mortbay.jetty:jetty:6.1.26"
+    testCompile "junit:junit:4.8.2"
+}
