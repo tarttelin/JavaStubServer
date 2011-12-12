@@ -34,7 +34,7 @@ public class StubServerTest {
     @Test
     public void start_shouldStartAWebServerOnTheDesignatedPort() throws IOException {
         StubResponse response = makeRequest("", "GET", (String) null);
-        
+
         assertNotNull(response);
     }
 
@@ -87,7 +87,7 @@ public class StubServerTest {
         }
         fail("Should not have met all expectations");
     }
-    
+
     @Test
     public void expect_shouldAcceptAPostRequestWithABodyAndCaptureItForLaterAssertion() throws Exception {
         StubMethod postedRequest = post("/some/posted/json");
@@ -98,6 +98,18 @@ public class StubServerTest {
 
         assertEquals(201, response.responseCode);
         assertEquals(json, postedRequest.body);
+    }
+
+    @Test
+    public void expect_shouldAcceptAPostRequestWithHeadersAndCaptureThemForLaterAssertion() throws Exception {
+        StubMethod postedRequest = post("/some/posted/json");
+        server.expect(postedRequest).thenReturn(201, null, null);
+        String json = "{}";
+
+        StubResponse response = makeRequest("/some/posted/json", "POST", json, "application/checkMe");
+
+        assertEquals(201, response.responseCode);
+        assertEquals("application/checkMe", postedRequest.headers.get("Content-Type"));
     }
 
     @Test
