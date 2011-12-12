@@ -4,6 +4,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -21,6 +23,7 @@ public class StubMethod {
      * The content of the matched requests body.
      */
     public String body;
+    public Map<String, String> headers;
 
     private StubMethod(String method, String url) {
         this.method = method;
@@ -77,6 +80,12 @@ public class StubMethod {
                 body = "";
                 for (String line = bufferedReader.readLine(); line != null; line = bufferedReader.readLine()) {
                     body += line;
+                }
+                Enumeration headerNames = httpServletRequest.getHeaderNames();
+                headers = new HashMap<String, String>();
+                while(headerNames.hasMoreElements()) {
+                    String headerName = (String)headerNames.nextElement();
+                    headers.put(headerName, httpServletRequest.getHeader(headerName));
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
