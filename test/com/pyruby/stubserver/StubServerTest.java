@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static com.pyruby.stubserver.StubMethod.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 public class StubServerTest {
 
@@ -190,6 +191,13 @@ public class StubServerTest {
 
         makeRequest("/some/resource/id", "DELETE", "Yo Mamma");
 
+        server.verify();
+    }
+
+    @Test
+    public void clear_shouldRemoveDanglingExpectations() throws Exception {
+        server.expect(get("/some/unsatisfied/url")).thenReturn(200, "text/html", "didn't got me");
+        server.clearExpectations();
         server.verify();
     }
 
