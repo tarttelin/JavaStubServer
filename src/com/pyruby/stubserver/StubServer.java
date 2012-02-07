@@ -42,7 +42,7 @@ public class StubServer {
     private int port;
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
-    private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched");
+    private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched", null);
 
     /**
      * It's usually best to use ports that are above 1024.  If the port is already bound by another process, the server

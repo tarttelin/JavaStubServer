@@ -42,16 +42,43 @@ public class StubServerTest {
     public void expect_shouldAcceptAGetRequestToAUrlAndThenReturnTheExpectedResponse() throws IOException {
         server.expect(get("/my/expected/context")).thenReturn(200, "application/json", "My expected response");
 
-        StubResponse response = makeRequest("/my/expected/context", "GET", (String)null);
+        StubResponse response = makeRequest("/my/expected/context", "GET", (String) null);
 
         assertEquals("My expected response", response.body);
+    }
+
+    @Test
+    public void expect_shouldAcceptAHeadRequestToAUrlAndThenReturnTheExpectedResponse() throws IOException {
+        server.expect(head("/my/expected/context")).thenReturn(200, "application/json", "");
+
+        makeRequest("/my/expected/context", "HEAD", (String) null);
+
+        server.verify();
+    }
+
+    @Test
+    public void expect_shouldAcceptATraceRequestToAUrlAndThenReturnTheExpectedResponse() throws IOException {
+        server.expect(trace("/my/expected/context")).thenReturn(200, "application/json", "");
+
+        makeRequest("/my/expected/context", "TRACE", (String) null);
+
+        server.verify();
+    }
+
+    @Test
+    public void expect_shouldAcceptAnOptionsRequestToAUrlAndThenReturnTheExpectedResponse() throws IOException {
+        server.expect(options("/my/expected/context")).thenReturn(200, "application/json", "");
+
+        makeRequest("/my/expected/context", "OPTIONS", (String) null);
+
+        server.verify();
     }
 
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlThatMatchesARegEx() throws IOException {
         server.expect(get("/my/expected/\\d+")).thenReturn(200, "text/plain", null);
 
-        makeRequest("/my/expected/2312", "GET", (String)null);
+        makeRequest("/my/expected/2312", "GET", (String) null);
 
         server.verify();
     }
@@ -73,7 +100,7 @@ public class StubServerTest {
     }
 
     @Test
-    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedExpectations() throws IOException {
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedUrlExpectations() throws IOException {
         server.expect(get("/some/url")).thenReturn(200, "text/html", "Got me");
         server.expect(get("/some/unsatisfied/url")).thenReturn(200, "text/html", "didn't got me");
 
@@ -83,6 +110,33 @@ public class StubServerTest {
             server.verify();
         } catch (AssertionError e) {
             assertTrue(e.getMessage().contains("/some/unsatisfied/url"));
+            return;
+        }
+        fail("Should not have met all expectations");
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeader() throws IOException {
+        server.expect(get("/my/expected/context").ifHeader("x-test", "foobar"))
+                .thenReturn(200, "application/json", "My expected response");
+
+        makeRequest("/my/expected/context", "GET", null, "x-test", "foobar");
+
+        server.verify();
+    }
+
+    @Test
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedHeaderExpectations() throws IOException {
+        server.expect(get("/some/url").ifHeader("Content-Type", "foobar")).thenReturn(200, "text/html", "Got me");
+
+        makeRequest("/some/url", "GET", null, "Content-Type", "stuff");
+
+        try {
+            server.verify();
+        } catch (AssertionError e) {
+            String message = e.getMessage();
+            assertTrue(message, message.contains("/some/url"));
+            assertTrue(message, message.contains("where Content-Type matches foobar"));
             return;
         }
         fail("Should not have met all expectations");
@@ -116,7 +170,7 @@ public class StubServerTest {
     public void expect_shouldReturnContentWithDefinedContentType() throws Exception {
         server.expect(get("/some/url")).thenReturn(200,"application/json", "[1,2,3]");
 
-        StubResponse response = makeRequest("/some/url", "GET", (String)null);
+        StubResponse response = makeRequest("/some/url", "GET", (String) null);
 
         assertEquals("application/json", response.contentType);
     }
@@ -151,12 +205,21 @@ public class StubServerTest {
         return makeRequest(path, method, body.toString());
     }
 
+    private StubResponse makeRequest(String path, String method, String body) throws IOException {
+        return makeRequest(path, method, body, null, null);
+    }
+
     private StubResponse makeRequest(String path, String method, String body, String contentType) throws IOException {
+        return makeRequest(path, method, body, "Content-Type", contentType);
+    }
+
+    private StubResponse makeRequest(String path, String method, String body,
+                                     String headerKey, String headerValue) throws IOException {
         URL url = new URL(baseUrl + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
-        if (contentType != null) {
-            conn.setRequestProperty("Content-Type", contentType);
+        if (headerKey != null) {
+            conn.setRequestProperty(headerKey, headerValue);
         }
         if (body != null && !method.equals("DELETE")) {
             conn.setDoOutput(true);
@@ -174,10 +237,6 @@ public class StubServerTest {
             in.close();
         }
         return new StubResponse(conn.getResponseCode(), conn.getHeaderFields(), conn.getContentType(), response.toString());
-    }
-
-    private StubResponse makeRequest(String path, String method, String body) throws IOException {
-        return makeRequest(path, method, body, null);
     }
 
     private static class StubResponse {
