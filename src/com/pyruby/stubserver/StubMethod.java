@@ -1,9 +1,7 @@
 package com.pyruby.stubserver;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,7 +31,7 @@ public class StubMethod {
     /**
      * The content of the matched request's body.
      */
-    public String body;
+    public byte[] body;
 
     private StubMethod(String method, String url) {
         this.method = method;
@@ -120,14 +118,31 @@ public class StubMethod {
     /**
      * Sets an expectation that requests will only be matched if they have a request header that matches
      * a specified expression.
-     * @param key the name of the header, e.g. "Content-Type". Note that this is canse-sensitive, although
-     *            HTTP headers are generally not actually case-sensitive.
+     *
+     * @param key        the name of the header, e.g. "Content-Type". Note that this is canse-sensitive, although
+     *                   HTTP headers are generally not actually case-sensitive.
      * @param valueRegex the pattern to be matched.
      * @return this
      */
     public StubMethod ifHeader(String key, String valueRegex) {
         headerExpectations.put(key, valueRegex);
         return this;
+    }
+
+    /**
+     * Sets an expectation that requests will only be matched if they have a content-type that matches
+     * a specified expression. This is a special case of {@link #ifHeader(String, String)}.
+     *
+     * @param valueRegex the pattern to be matched.
+     * @return this
+     */
+    public StubMethod ifContentType(String valueRegex) {
+        headerExpectations.put("Content-Type", valueRegex);
+        return this;
+    }
+
+    public String bodyString() {
+        return Expectation.asString(body);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -164,16 +179,27 @@ public class StubMethod {
     }
 
     private void copyTheBody(HttpServletRequest httpServletRequest) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpServletRequest.getInputStream()));
-        body = "";
-        for (String line = bufferedReader.readLine(); line != null; line = bufferedReader.readLine()) {
-            body += line;
+        BufferedInputStream in = new BufferedInputStream(httpServletRequest.getInputStream());
+        body = copyBytes(in);
+        in.close();
+    }
+
+    private byte[] copyBytes(InputStream input) throws IOException {
+        final int bufferSize = 1024 * 16;
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream(bufferSize);
+        final byte[] buffer = new byte[bufferSize];
+        int n = input.read(buffer);
+        while (n >= 0) {
+            outStream.write(buffer, 0, n);
+            n = input.read(buffer);
         }
+        return outStream.toByteArray();
     }
 
     @Override
     public String toString() {
-        StringBuilder b = new StringBuilder(String.format("url: %s, method: %s", url, method));
+        StringBuilder b = new StringBuilder(method);
+        b.append(' ').append(url);
         for (String key : headerExpectations.keySet()) {
             String exp = headerExpectations.get(key);
             b.append(" where ").append(key).append(" matches ").append(exp);
