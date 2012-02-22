@@ -42,7 +42,7 @@ public class StubServer {
     private int port;
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
-    private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched");
+    private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched", null);
 
     /**
      * It's usually best to use ports that are above 1024.  If the port is already bound by another process, the server
@@ -82,7 +82,9 @@ public class StubServer {
     }
 
     /**
-     * Stops the {@link StubServer}.  This should be in either a unit test tearDown, or a finally block.
+     * Stops the {@link StubServer}.  This should be in either a finally block, a unit test tear-down, or a class
+     * tear-down. Using a class tear-down will make testing run much more quickly, but you will also need to
+     * use {@link #clearExpectations()} in your unit-test tear-down after each test.
      */
     public void stop() {
         try {
@@ -101,6 +103,13 @@ public class StubServer {
         for (Expectation expected : expectations) {
             expected.verify();
         }
+    }
+
+    /**
+     * Clears all expectations, allowing this instance to be set up for another test.
+     */
+    public void clearExpectations() {
+        expectations.clear();
     }
 
     private class StubHandler extends AbstractHandler {
