@@ -23,7 +23,7 @@ public class StubMethod {
     /**
      * The headers received in the matched request.
      */
-    public Map<String, String> headers;
+    public Map<String, String> requestHeaders;
     /**
      * The query parameters in the matched request
      */
@@ -157,7 +157,7 @@ public class StubMethod {
                     return false;
                 }
             }
-            headers = hdrs;
+            requestHeaders = hdrs;
             query = httpServletRequest.getParameterMap();
             try {
                 copyTheBody(httpServletRequest);

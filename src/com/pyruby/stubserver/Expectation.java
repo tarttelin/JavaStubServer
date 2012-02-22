@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Created by calling {@link StubServer#expect(StubMethod)}, the returned expectation is then used to define
@@ -18,7 +18,7 @@ import java.util.Map;
  * </ul>
  */
 public class Expectation {
-    private static final Map<String, String> EMPTY_MAP = Collections.emptyMap();
+    private static final List<Header> EMPTY_HEADERS = Collections.emptyList();
     private static final byte[] EMPTY_BYTES = new byte[0];
 
     private final StubMethod stubbedMethod;
@@ -37,7 +37,7 @@ public class Expectation {
      * @param mimeType   The content type of the response, e.g. text/html
      */
     public void thenReturn(int statusCode, String mimeType) {
-        thenReturn(statusCode, mimeType, EMPTY_BYTES, EMPTY_MAP);
+        thenReturn(statusCode, mimeType, EMPTY_BYTES, EMPTY_HEADERS);
     }
 
     /**
@@ -49,7 +49,7 @@ public class Expectation {
      * @param responseBody The body of the response, e.g. &lt;html>&lt;body>Hello World&lt;/body>&lt;/html>
      */
     public void thenReturn(int statusCode, String mimeType, String responseBody) {
-        thenReturn(statusCode, mimeType, responseBody, EMPTY_MAP);
+        thenReturn(statusCode, mimeType, responseBody, EMPTY_HEADERS);
     }
 
     /**
@@ -61,7 +61,7 @@ public class Expectation {
      * @param responseBody    The body of the response, e.g. &lt;html>&lt;body>Hello World&lt;/body>&lt;/html>
      * @param responseHeaders An optional map of headers that should be returned in the response. May be null.
      */
-    public void thenReturn(int statusCode, String mimeType, String responseBody, Map<String, String> responseHeaders) {
+    public void thenReturn(int statusCode, String mimeType, String responseBody, List<Header> responseHeaders) {
         this.cannedResponse = new CannedResponse(statusCode, mimeType, responseBody, responseHeaders);
     }
 
@@ -74,7 +74,7 @@ public class Expectation {
      * @param responseBody The body of the response
      */
     public void thenReturn(int statusCode, String mimeType, byte[] responseBody) {
-        thenReturn(statusCode, mimeType, responseBody, EMPTY_MAP);
+        thenReturn(statusCode, mimeType, responseBody, EMPTY_HEADERS);
     }
 
     /**
@@ -86,7 +86,7 @@ public class Expectation {
      * @param responseBody    The body of the response
      * @param responseHeaders An optional map of headers that should be returned in the response. May be null.
      */
-    public void thenReturn(int statusCode, String mimeType, byte[] responseBody, Map<String, String> responseHeaders) {
+    public void thenReturn(int statusCode, String mimeType, byte[] responseBody, List<Header> responseHeaders) {
         this.cannedResponse = new CannedResponse(statusCode, mimeType, responseBody, responseHeaders);
     }
 
@@ -111,23 +111,23 @@ public class Expectation {
         private final int statusCode;
         private final String mimeType;
         private final byte[] body;
-        private final Map<String, String> headers;
+        private final List<Header> headers;
 
-        CannedResponse(final int statusCode, final String mimeType, final byte[] body, final Map<String, String> headers) {
+        CannedResponse(final int statusCode, final String mimeType, final byte[] body, final List<Header> headers) {
             this.statusCode = statusCode;
             this.mimeType = mimeType;
             this.body = body == null ? EMPTY_BYTES : body;
-            this.headers = headers != null ? headers : EMPTY_MAP;
+            this.headers = headers != null ? headers : EMPTY_HEADERS;
         }
 
-        CannedResponse(final int statusCode, final String mimeType, final String body, final Map<String, String> headers) {
+        CannedResponse(final int statusCode, final String mimeType, final String body, final List<Header> headers) {
             this(statusCode, mimeType, asBytes(body), headers);
         }
 
         void respond(final HttpServletResponse httpServletResponse) throws IOException {
             httpServletResponse.setHeader("Content-Type", mimeType);
-            for (Map.Entry<String, String> e : headers.entrySet()) {
-                httpServletResponse.setHeader(e.getKey(), e.getValue());
+            for (Header hdr : headers) {
+                httpServletResponse.addHeader(hdr.name, hdr.value);
             }
             httpServletResponse.setStatus(statusCode);
             OutputStream writer = httpServletResponse.getOutputStream();

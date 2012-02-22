@@ -8,11 +8,10 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.pyruby.stubserver.StubMethod.*;
+import static com.pyruby.stubserver.Header.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -34,18 +33,24 @@ public class StubServerTest {
 
     @Test
     public void start_shouldStartAWebServerOnTheDesignatedPort() throws IOException {
-        StubResponse response = makeRequest("", "GET");
+        TestStubResponse response = makeRequest("", "GET");
 
         assertNotNull(response);
     }
 
     @Test
-    public void expect_shouldAcceptAGetRequestToAUrlAndThenReturnTheExpectedResponse() throws IOException {
-        server.expect(get("/my/expected/context")).thenReturn(200, "application/json", "My expected response");
+    public void expect_shouldAcceptAGetRequestToAUrlAndThenReturnTheExpectedResponse_withHeaders() throws IOException {
+        server.expect(get("/my/expected/context")).thenReturn(200, "application/json", "My expected response",
+                headers(header("Set-Cookie", "c1=aaa"), header("Set-Cookie", "c2=bbb")));
 
-        StubResponse response = makeRequest("/my/expected/context", "GET");
+        TestStubResponse response = makeRequest("/my/expected/context", "GET");
 
         assertEquals("My expected response", response.bodyString());
+
+        List<String> cookies = response.headerFields.get("Set-Cookie");
+        assertEquals(2, cookies.size());
+        assertTrue(cookies.contains("c1=aaa"));
+        assertTrue(cookies.contains("c2=bbb"));
     }
 
     @Test
@@ -92,7 +97,7 @@ public class StubServerTest {
         postParams.put("name", "arthur");
         postParams.put("age", "1074");
 
-        StubResponse response = makeRequest("/my/posted/context", "POST", postParams);
+        TestStubResponse response = makeRequest("/my/posted/context", "POST", postParams);
 
         assertEquals(201, response.responseCode);
         assertNotNull(expectedPath.query);
@@ -109,7 +114,7 @@ public class StubServerTest {
         server.expect(get("/my/expected/context").ifContentType("application/octet\\-stream"))
                 .thenReturn(200, "application/octet-stream", res);
 
-        StubResponse response = makeRequest("/my/expected/context", "GET", "", "Content-Type", "application/octet-stream");
+        TestStubResponse response = makeRequest("/my/expected/context", "GET", "", "Content-Type", "application/octet-stream");
 
         server.verify();
 
@@ -128,7 +133,7 @@ public class StubServerTest {
         server.expect(post("/my/expected/context").ifContentType("application/octet-stream"))
                 .thenReturn(204, "application/octet-stream", "");
 
-        StubResponse response = makeRequest("/my/expected/context", "POST", req, "Content-Type", "application/octet-stream");
+        TestStubResponse response = makeRequest("/my/expected/context", "POST", req, "Content-Type", "application/octet-stream");
 
         server.verify();
 
@@ -184,7 +189,7 @@ public class StubServerTest {
         server.expect(postedRequest).thenReturn(201, null);
         String json = "{\"key\":\"value\"}";
 
-        StubResponse response = makeRequest("/some/posted/json", "POST", json, "application/json");
+        TestStubResponse response = makeRequest("/some/posted/json", "POST", json, "application/json");
 
         assertEquals(201, response.responseCode);
         assertEquals(json, postedRequest.bodyString());
@@ -196,23 +201,23 @@ public class StubServerTest {
         server.expect(postedRequest).thenReturn(201, null);
         String json = "{}";
 
-        StubResponse response = makeRequest("/some/posted/json", "POST", json, "application/checkMe");
+        TestStubResponse response = makeRequest("/some/posted/json", "POST", json, "application/checkMe");
 
         assertEquals(201, response.responseCode);
-        assertEquals("application/checkMe", postedRequest.headers.get("Content-Type"));
+        assertEquals("application/checkMe", postedRequest.requestHeaders.get("Content-Type"));
     }
 
     @Test
     public void expect_shouldReturnContentWithDefinedContentType() throws Exception {
         server.expect(get("/some/url")).thenReturn(200, "application/json", "[1,2,3]");
 
-        StubResponse response = makeRequest("/some/url", "GET");
+        TestStubResponse response = makeRequest("/some/url", "GET");
 
         assertEquals("application/json", response.contentType);
     }
 
     @Test
-    public void expect_shouldHandlePUTRequest() throws Exception {
+    public void expect_shouldHandlePutRequest() throws Exception {
         server.expect(put("/some/resource/id")).thenReturn(409, null, "Conflicts with resource at that location");
 
         makeRequest("/some/resource/id", "PUT", "Yo Mamma");
@@ -221,7 +226,7 @@ public class StubServerTest {
     }
 
     @Test
-    public void expect_shouldHandleDELETERequest() throws Exception {
+    public void expect_shouldHandleDeleteRequest() throws Exception {
         server.expect(delete("/some/resource/id")).thenReturn(404, null, "No matching resource found");
 
         makeRequest("/some/resource/id", "DELETE", "Yo Mamma");
@@ -236,7 +241,7 @@ public class StubServerTest {
         server.verify();
     }
 
-    private StubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
+    private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : query.entrySet()) {
             body.append(URLEncoder.encode(entry.getKey(), "UTF-8"))
@@ -248,29 +253,29 @@ public class StubServerTest {
         return makeRequest(path, method, body.toString());
     }
 
-    private StubResponse makeRequest(String path, String method) throws IOException {
+    private TestStubResponse makeRequest(String path, String method) throws IOException {
         return makeRequest(path, method, null, null);
     }
 
-    private StubResponse makeRequest(String path, String method, String body) throws IOException {
+    private TestStubResponse makeRequest(String path, String method, String body) throws IOException {
         return makeRequest(path, method, body, null, null);
     }
 
-    private StubResponse makeRequest(String path, String method, String body, String contentType) throws IOException {
+    private TestStubResponse makeRequest(String path, String method, String body, String contentType) throws IOException {
         return makeRequest(path, method, body, "Content-Type", contentType);
     }
 
-    private StubResponse makeRequest(String path, String method, String body,
+    private TestStubResponse makeRequest(String path, String method, String body,
                                      String headerKey, String headerValue) throws IOException {
         return makeRequest(path, method, Expectation.asBytes(body), headerKey, headerValue);
     }
 
-    private StubResponse makeRequest(String path, String method, byte[] requestBody,
+    private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
                                      String headerKey, String headerValue) throws IOException {
         URL url = new URL(baseUrl + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
-        if (headerKey != null) {
+        if (headerKey != null && headerValue != null) {
             conn.setRequestProperty(headerKey, headerValue);
         }
         if (requestBody != null && requestBody.length > 0 && !method.equals("DELETE")) {
@@ -286,7 +291,7 @@ public class StubServerTest {
             bytes = copyBytes(in);
             in.close();
         }
-        return new StubResponse(conn.getResponseCode(), conn.getHeaderFields(), conn.getContentType(), bytes);
+        return new TestStubResponse(conn.getResponseCode(), conn.getHeaderFields(), conn.getContentType(), bytes);
     }
 
     private byte[] copyBytes(InputStream input) throws IOException {
@@ -301,13 +306,13 @@ public class StubServerTest {
         return outStream.toByteArray();
     }
 
-    private static class StubResponse {
+    private static class TestStubResponse {
         public final int responseCode;
         public final Map<String, List<String>> headerFields;
         public final String contentType;
         public final byte[] body;
 
-        public StubResponse(int responseCode, Map<String, List<String>> headerFields, String contentType, byte[] body) {
+        public TestStubResponse(int responseCode, Map<String, List<String>> headerFields, String contentType, byte[] body) {
             this.responseCode = responseCode;
             this.headerFields = headerFields;
             this.contentType = contentType;
