@@ -1,3 +1,6 @@
+[![Build Status](https://buildhive.cloudbees.com/job/happysathya/job/JavaStubServer/badge/icon)](https://buildhive.cloudbees.com/job/happysathya/job/JavaStubServer/)
+
+
 Stub server is intended to give a mockito-esque feel to a stubbed HTTP server.  This allows you to test
 an application that hits external HTTP interfaces as a proper black box.  Take this example
 <p>
