@@ -1,6 +1,3 @@
-[![Build Status](https://buildhive.cloudbees.com/job/happysathya/job/JavaStubServer/badge/icon)](https://buildhive.cloudbees.com/job/happysathya/job/JavaStubServer/)
-
-
 Stub server is intended to give a mockito-esque feel to a stubbed HTTP server.  This allows you to test
 an application that hits external HTTP interfaces as a proper black box.  Take this example
 <p>
@@ -31,10 +28,10 @@ With this approach, it feels more like a unit test, but it allows you to totally
 - Given the plethora of cat skinning devices, I have not prescribed a mechanism to build StubServer, or a way of
 downloading it's dependencies.  It was built with the following:-
 
-jetty-6.1.26.jar
-jetty-util-6.1.26.jar
-servlet-api-2.5-20081211.jar
-junit-4.7.jar
+  jetty-6.1.26.jar<br>
+  jetty-util-6.1.26.jar<br>
+  servlet-api-2.5-20081211.jar<br>
+  junit-4.7.jar<br>
 
 Later or earlier versions may or may not work.
 
