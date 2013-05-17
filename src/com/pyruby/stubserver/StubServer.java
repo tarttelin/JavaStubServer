@@ -110,6 +110,14 @@ public class StubServer {
      */
     public void clearExpectations() {
         expectations.clear();
+	}
+	
+   /**
+     * Returns the assigned port number - useful for when the server was created with port number of "0" so that the actual
+     * ephemeral port number can be retrieved.
+     */
+    public int getLocalPort() {
+        return server.getConnectors()[0].getLocalPort();
     }
 
     private class StubHandler extends AbstractHandler {
