@@ -6,9 +6,7 @@ import org.junit.Test;
 import java.net.*;
 import java.io.*;
 
-import static com.pyruby.stubserver.StubMethod.get;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class StubServerEphemeralTest {
 
@@ -26,7 +24,7 @@ public class StubServerEphemeralTest {
     }
 
     @Test
-    public void testWorksWithEphemeralPort () throws UnknownHostException, IOException {
+    public void testWorksWithEphemeralPort () throws IOException {
         int assignedPort = server.getLocalPort();
         Socket socket = new Socket("127.0.0.1", assignedPort);
         assertTrue(socket.isConnected());
