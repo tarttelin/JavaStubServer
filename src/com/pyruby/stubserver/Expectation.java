@@ -90,6 +90,14 @@ public class Expectation {
         this.cannedResponse = new CannedResponse(statusCode, mimeType, responseBody, responseHeaders);
     }
 
+    /**
+     * Proxy this request to the target server defined in {@link com.pyruby.stubserver.StubServer()#proxy}
+     *
+     */
+    public void thenDelegate() {
+        throw new IllegalStateException("Stub server does not have a proxy configured");
+    }
+
     boolean matches(String target, HttpServletRequest httpServletRequest) {
         if (satisfied) return false;
         boolean matched = stubbedMethod.matches(target, httpServletRequest);

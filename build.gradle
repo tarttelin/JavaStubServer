@@ -1,6 +1,6 @@
 apply plugin: 'idea'
 apply plugin: 'java'
-apply plugin: 'idea'
+apply plugin: 'maven'
 
 version = '0.5'
 
@@ -16,4 +16,20 @@ repositories {
 dependencies {
     compile "javax.servlet:servlet-api:2.5", "org.mortbay.jetty:jetty:6.1.26"
     testCompile "junit:junit:4.8.2"
+}
+
+task writeNewPom << {
+    pom {
+        project {
+            inceptionYear '2011'
+            groupId 'com.pyruby'
+            licenses {
+                license {
+                    name 'freeBSD'
+                    url 'http://www.freebsd.org/copyright/freebsd-license.html'
+                    distribution 'repo'
+                }
+            }
+        }
+    }.writeTo("${buildDir}/newpom.xml")
 }

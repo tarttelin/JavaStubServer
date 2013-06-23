@@ -43,6 +43,7 @@ public class StubServer {
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
     private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched", null);
+    private ProxyResponder proxy;
 
     /**
      * It's usually best to use ports that are above 1024.  If the port is already bound by another process, the server
@@ -76,7 +77,12 @@ public class StubServer {
      * @return {@link Expectation} used to specify what happens when a request matches the stubbedMethod
      */
     public Expectation expect(StubMethod stubbedMethod) {
-        Expectation expectation = new Expectation(stubbedMethod);
+        Expectation expectation;
+        if (proxy != null) {
+            expectation = new ProxiableExpectation(stubbedMethod, proxy);
+        } else {
+            expectation = new Expectation(stubbedMethod);
+        }
         expectations.add(expectation);
         return expectation;
     }
@@ -93,6 +99,14 @@ public class StubServer {
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**
+     * Delegate all unmatched calls to the target server.
+     * @param targetServer the base URL of the target server, in the format http://myserver:port
+     */
+    public void proxy(String targetServer) {
+        proxy = new ProxyResponder(targetServer);
     }
 
     /**
@@ -128,7 +142,12 @@ public class StubServer {
                     return;
                 }
             }
-            nullResponse.respond(httpServletResponse);
+            if (proxy != null) {
+                proxy.matches(target, httpServletRequest);
+                proxy.respond(httpServletResponse);
+            } else {
+                nullResponse.respond(httpServletResponse);
+            }
         }
     }
 

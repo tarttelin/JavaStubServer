@@ -33,7 +33,7 @@ public class StubMethod {
      */
     public byte[] body;
 
-    private StubMethod(String method, String url) {
+    protected StubMethod(String method, String url) {
         this.method = method;
         this.url = url;
     }
@@ -168,7 +168,7 @@ public class StubMethod {
         return match;
     }
 
-    private Map<String, String> copyTheRequestHeaders(HttpServletRequest httpServletRequest) {
+    protected Map<String, String> copyTheRequestHeaders(HttpServletRequest httpServletRequest) {
         Enumeration headerNames = httpServletRequest.getHeaderNames();
         Map<String, String> headers = new LinkedHashMap<String, String>();
         while (headerNames.hasMoreElements()) {
@@ -184,7 +184,7 @@ public class StubMethod {
         in.close();
     }
 
-    private byte[] copyBytes(InputStream input) throws IOException {
+    protected byte[] copyBytes(InputStream input) throws IOException {
         final int bufferSize = 1024 * 16;
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream(bufferSize);
         final byte[] buffer = new byte[bufferSize];

@@ -241,6 +241,46 @@ public class StubServerTest {
         server.verify();
     }
 
+    @Test
+    public void proxy_shouldDelegateUnmatchedCallsToTheProxyServer() throws Exception {
+        StubServer delegate = new StubServer(0);
+        delegate.start();
+        try {
+            server.proxy("http://localhost:" + delegate.getLocalPort());
+            delegate.expect(get("/unmatched")).thenReturn(200, "text/html", "hit delegate");
+            server.expect(get("/matched")).thenReturn(200, "text/html", "hit stub");
+
+            TestStubResponse delegateResponse = makeRequest("/unmatched", "GET");
+            TestStubResponse stubResponse = makeRequest("/matched", "GET");
+
+            server.verify();
+            assertEquals("hit stub", stubResponse.bodyString());
+            delegate.verify();
+            assertEquals("hit delegate", delegateResponse.bodyString());
+        } finally {
+            delegate.stop();
+        }
+    }
+
+    @Test
+    public void expectAndDelegateTo_shouldMatchAndPassTheCallToTheProxy() throws IOException {
+        StubServer delegate = new StubServer(0);
+        delegate.start();
+        try {
+            server.proxy("http://localhost:" + delegate.getLocalPort());
+            delegate.expect(get("/matched")).thenReturn(200, "text/html", "hit delegate");
+            server.expect(get("/matched")).thenDelegate();
+
+            TestStubResponse response = makeRequest("/matched", "GET");
+
+            server.verify();
+            delegate.verify();
+            assertEquals("hit delegate", response.bodyString());
+        } finally {
+            delegate.stop();
+        }
+    }
+
     private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : query.entrySet()) {
