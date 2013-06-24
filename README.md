@@ -11,7 +11,7 @@ Example test:<br>
 ```
   StubServer server = new StubServer(21435); // matching port
   server.start();
-  server.expect(get("/api/customer/Bob")).thenReturn(200, "application/xml","&lt;customer>&lt;name>Bob&lt;/name>&lt;/customer>");
+  server.expect(get("/api/customer/Bob")).thenReturn(200, "application/xml","<customer><name>Bob</name></customer>");
   // can have multiple expectations. The url is actually a regex
   try {
      selenium.open("http://localhost:8080/users/?name=Bob");
