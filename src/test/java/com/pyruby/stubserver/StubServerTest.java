@@ -17,11 +17,11 @@ import static org.junit.Assert.assertEquals;
 
 public class StubServerTest {
 
-    static String baseUrl = "http://localhost:44804";
-    private StubServer server;
+    protected String baseUrl = "http://localhost:44804";
+    protected StubServer server;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         server = new StubServer(44804);
         server.start();
     }
