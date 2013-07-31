@@ -30,7 +30,3 @@ task writeNewPom << {
     }.writeTo("${buildDir}/newpom.xml")
 }
 
-idea.project.ipr.withXml { provider ->
-    def vcsConfig = provider.asNode().component.find { it.'@name' == 'VcsDirectoryMappings' }
-    vcsConfig.mapping[0].'@vcs' = 'Git'
-}
