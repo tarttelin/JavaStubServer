@@ -8,20 +8,22 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static com.pyruby.stubserver.Header.header;
+import static com.pyruby.stubserver.Header.headers;
 import static com.pyruby.stubserver.StubMethod.*;
-import static com.pyruby.stubserver.Header.*;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class StubServerTest {
 
-    static String baseUrl = "http://localhost:44804";
-    private StubServer server;
+    protected String baseUrl = "http://localhost:44804";
+    protected StubServer server;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         server = new StubServer(44804);
         server.start();
     }
@@ -82,7 +84,7 @@ public class StubServerTest {
 
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlThatMatchesARegEx() throws IOException {
-        server.expect(get("/my/expected/\\d+")).thenReturn(200, "text/plain");
+        server.expect(get("/my/expected/\\d+")).thenReturn(200, "text/plain", "");
 
         makeRequest("/my/expected/2312", "GET");
 
@@ -92,7 +94,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAPostRequestWithACollectionOfPostParameters() throws IOException {
         StubMethod expectedPath = post("/my/posted/context");
-        server.expect(expectedPath).thenReturn(201, null);
+        server.expect(expectedPath).thenReturn(201);
         Map<String, String> postParams = new HashMap<String, String>();
         postParams.put("name", "arthur");
         postParams.put("age", "1074");
@@ -186,7 +188,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAPostRequestWithABodyAndCaptureItForLaterAssertion() throws Exception {
         StubMethod postedRequest = post("/some/posted/json");
-        server.expect(postedRequest).thenReturn(201, null);
+        server.expect(postedRequest).thenReturn(201);
         String json = "{\"key\":\"value\"}";
 
         TestStubResponse response = makeRequest("/some/posted/json", "POST", json, "application/json");
@@ -198,7 +200,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAPostRequestWithHeadersAndCaptureThemForLaterAssertion() throws Exception {
         StubMethod postedRequest = post("/some/posted/json");
-        server.expect(postedRequest).thenReturn(201, null);
+        server.expect(postedRequest).thenReturn(201);
         String json = "{}";
 
         TestStubResponse response = makeRequest("/some/posted/json", "POST", json, "application/checkMe");
@@ -232,6 +234,17 @@ public class StubServerTest {
         makeRequest("/some/resource/id", "DELETE", "Yo Mamma");
 
         server.verify();
+    }
+
+    @Test
+    public void expect_shouldHandleNoContentResponsesWithNoContentType() throws IOException {
+        server.expect(post("/some/resource/id")).thenReturn(204);
+
+        TestStubResponse response = makeRequest("/some/resource/id", "POST", "Inbound content");
+
+        server.verify();
+        assertFalse(response.headerFields.containsKey("Content-Type"));
+        assertEquals(0, response.body.length);
     }
 
     @Test
