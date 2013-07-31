@@ -4,11 +4,6 @@ apply plugin: 'maven'
 
 version = '0.5'
 
-sourceSets {
-    main { java { srcDirs = ["src"]  } }
-    test { java { srcDirs = ["test"] } }
-}
-
 repositories {
     mavenCentral()
 }
@@ -16,6 +11,7 @@ repositories {
 dependencies {
     compile "javax.servlet:servlet-api:2.5", "org.mortbay.jetty:jetty:6.1.26"
     testCompile "junit:junit:4.8.2"
+    testCompile "commons-io:commons-io:2.4"
 }
 
 task writeNewPom << {
@@ -33,3 +29,4 @@ task writeNewPom << {
         }
     }.writeTo("${buildDir}/newpom.xml")
 }
+

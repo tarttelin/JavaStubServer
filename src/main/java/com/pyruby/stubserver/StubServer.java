@@ -2,6 +2,7 @@ package com.pyruby.stubserver;
 
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
+import org.mortbay.jetty.security.SslSocketConnector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ import java.util.List;
  */
 public class StubServer {
     private int port;
+    private final HttpsSettings httpsSettings;
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
     private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched", null);
@@ -52,20 +54,55 @@ public class StubServer {
      * configured to call
      */
     public StubServer(int port) {
+        this(port, null);
+    }
+
+    /**
+     * Use this constructor if you want to handle SSL requests. Note that it's http OR https - if you need to handle both
+     * just spin up two StubServer instances!
+     * @param port port to bind to. This should match the port that your system under test is configured to call.
+     * @param httpsSettings The SSL keystore settings to use.
+     */
+    public StubServer(int port, HttpsSettings httpsSettings) {
         this.port = port;
+        this.httpsSettings = httpsSettings;
     }
 
     /**
      * Starts a web server listening on the port supplied in the constructor
      */
     public void start() {
-        server = new Server(port);
+
+        createServer();
         server.setHandler(new StubHandler());
         try {
             server.start();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void createServer() {
+        if(httpsSettings != null) {
+            createSslServer();
+        }
+        else {
+            createPlainServer();
+        }
+    }
+
+    private void createPlainServer() {
+        server = new Server(port);
+    }
+
+    private void createSslServer() {
+        server = new Server();
+        SslSocketConnector connector = new SslSocketConnector();
+        connector.setPort(port);
+        connector.setKeystore(httpsSettings.getKeystore());
+        connector.setPassword(httpsSettings.getKeystorePassword());
+        connector.setKeyPassword(httpsSettings.getKeyPassword());
+        server.addConnector(connector);
     }
 
     /**
