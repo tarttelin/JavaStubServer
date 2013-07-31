@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -41,7 +42,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlAndThenReturnTheExpectedResponse_withHeaders() throws IOException {
         server.expect(get("/my/expected/context")).thenReturn(200, "application/json", "My expected response",
-                headers(header("Set-Cookie", "c1=aaa"), header("Set-Cookie", "c2=bbb")));
+            headers(header("Set-Cookie", "c1=aaa"), header("Set-Cookie", "c2=bbb")));
 
         TestStubResponse response = makeRequest("/my/expected/context", "GET");
 
@@ -112,7 +113,7 @@ public class StubServerTest {
         }
 
         server.expect(get("/my/expected/context").ifContentType("application/octet\\-stream"))
-                .thenReturn(200, "application/octet-stream", res);
+            .thenReturn(200, "application/octet-stream", res);
 
         TestStubResponse response = makeRequest("/my/expected/context", "GET", "", "Content-Type", "application/octet-stream");
 
@@ -131,7 +132,7 @@ public class StubServerTest {
         }
 
         server.expect(post("/my/expected/context").ifContentType("application/octet-stream"))
-                .thenReturn(204, "application/octet-stream", "");
+            .thenReturn(204, "application/octet-stream", "");
 
         TestStubResponse response = makeRequest("/my/expected/context", "POST", req, "Content-Type", "application/octet-stream");
 
@@ -159,7 +160,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeader() throws IOException {
         server.expect(get("/my/expected/context").ifHeader("x-test", "foobar"))
-                .thenReturn(200, "application/json", "My expected response");
+            .thenReturn(200, "application/json", "My expected response");
 
         makeRequest("/my/expected/context", "GET", "", "x-test", "foobar");
 
@@ -281,13 +282,35 @@ public class StubServerTest {
         }
     }
 
+    @Test
+    public void stub_matchesMoreThanOnce() throws IOException {
+        server.stub(StubMethod.get("/foo")).thenReturn(200, "text/plain", "You cannot be serious!");
+
+        TestStubResponse result1 = makeRequest("/foo", "GET");
+        TestStubResponse result2 = makeRequest("/foo", "GET");
+
+        assertEquals(200, result1.responseCode);
+        assertEquals("You cannot be serious!", result1.bodyString());
+        assertEquals(200, result2.responseCode);
+        assertEquals("You cannot be serious!", result2.bodyString());
+
+        server.verify();
+    }
+
+    @Test
+    public void stub_verifiesEvenIfNeverCalled() throws IOException {
+        server.stub(StubMethod.get("/foo")).thenReturn(200, "text/plain", "You cannot be serious!");
+
+        server.verify();
+    }
+
     private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : query.entrySet()) {
             body.append(URLEncoder.encode(entry.getKey(), "UTF-8"))
-                    .append("=")
-                    .append(URLEncoder.encode(entry.getValue(), "UTF-8"))
-                    .append('&');
+                .append("=")
+                .append(URLEncoder.encode(entry.getValue(), "UTF-8"))
+                .append('&');
         }
         body.deleteCharAt(body.length() - 1);
         return makeRequest(path, method, body.toString());
@@ -306,12 +329,12 @@ public class StubServerTest {
     }
 
     private TestStubResponse makeRequest(String path, String method, String body,
-                                     String headerKey, String headerValue) throws IOException {
+                                         String headerKey, String headerValue) throws IOException {
         return makeRequest(path, method, Expectation.asBytes(body), headerKey, headerValue);
     }
 
     private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
-                                     String headerKey, String headerValue) throws IOException {
+                                         String headerKey, String headerValue) throws IOException {
         URL url = new URL(baseUrl + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
