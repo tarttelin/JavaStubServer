@@ -125,6 +125,23 @@ public class StubServer {
     }
 
     /**
+     * Specify the method, i.e. {@link StubMethod#get} including context path you expect your application
+     * to call.  The resulting {@link Expectation} is used to allow you to specify what should happen when
+     * a subsequent request matches the stubbedMethod.
+     *
+     * This is different to expect(StubMethod) in that the StubMethod will match against multiple requests
+     * to the StubServer and will never fail verification.
+     *
+     * @param stubbedMethod {@link StubMethod}
+     * @return {@link Expectation} used to specify what happens when a request matches the stubbedMethod
+     */
+    public Expectation stub(StubMethod stubbedMethod) {
+        Stub stub = new Stub(stubbedMethod);
+        expectations.add(stub);
+        return stub;
+    }
+
+    /**
      * Stops the {@link StubServer}.  This should be in either a finally block, a unit test tear-down, or a class
      * tear-down. Using a class tear-down will make testing run much more quickly, but you will also need to
      * use {@link #clearExpectations()} in your unit-test tear-down after each test.

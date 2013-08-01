@@ -100,9 +100,13 @@ public class Expectation {
 
     boolean matches(String target, HttpServletRequest httpServletRequest) {
         if (satisfied) return false;
-        boolean matched = stubbedMethod.matches(target, httpServletRequest);
+        boolean matched = stubMethodMatches(target, httpServletRequest);
         if (matched) satisfied = true;
         return matched;
+    }
+
+    protected boolean stubMethodMatches(String target, HttpServletRequest httpServletRequest) {
+        return stubbedMethod.matches(target, httpServletRequest);
     }
 
     void verify() {
