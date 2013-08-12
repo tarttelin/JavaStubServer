@@ -5,13 +5,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
-import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.pyruby.stubserver.Header.header;
 import static com.pyruby.stubserver.Header.headers;
@@ -315,6 +316,29 @@ public class StubServerTest {
         server.stub(StubMethod.get("/foo")).thenReturn(200, "text/plain", "You cannot be serious!");
 
         server.verify();
+    }
+
+    @Test
+    public void delay_causesADelayInAMatchedExpectation() throws IOException {
+        server.expect(StubMethod.get("/foo")).delay(1, TimeUnit.SECONDS).thenReturn(204);
+
+        Date startTime = new Date();
+        makeRequest("/foo", "GET");
+        Date endTime = new Date();
+        assertTrue(endTime.getTime() - startTime.getTime() >= 1000);
+
+        server.verify();
+    }
+
+    @Test
+    public void delay_doesNotCauseADelayInAnUnmatchedExpectation() throws IOException {
+        server.expect(StubMethod.get("/foo")).delay(1, TimeUnit.SECONDS).thenReturn(204);
+
+        Date startTime = new Date();
+        makeRequest("/foobar", "GET");
+        Date endTime = new Date();
+        assertTrue(endTime.getTime() - startTime.getTime() < 1000);
+
     }
 
     private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {

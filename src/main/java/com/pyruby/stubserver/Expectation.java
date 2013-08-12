@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by calling {@link StubServer#expect(StubMethod)}, the returned expectation is then used to define
@@ -20,11 +21,12 @@ import java.util.List;
 public class Expectation {
     private static final List<Header> EMPTY_HEADERS = Collections.emptyList();
     private static final byte[] EMPTY_BYTES = new byte[0];
-    private static final String NO_MIME_TYPE =null;
+    private static final String NO_MIME_TYPE = null;
 
     private final StubMethod stubbedMethod;
     private CannedResponse cannedResponse;
     private boolean satisfied;
+    private long delayMillis = 0;
 
     Expectation(StubMethod stubbedMethod) {
         this.stubbedMethod = stubbedMethod;
@@ -104,7 +106,6 @@ public class Expectation {
 
     /**
      * Proxy this request to the target server defined in {@link com.pyruby.stubserver.StubServer()#proxy}
-     *
      */
     public void thenDelegate() {
         throw new IllegalStateException("Stub server does not have a proxy configured");
@@ -128,38 +129,56 @@ public class Expectation {
     }
 
     void respond(HttpServletResponse httpServletResponse) throws IOException {
+        delayResponse();
         cannedResponse.respond(httpServletResponse);
     }
 
-    static class CannedResponse {
-        private final int statusCode;
-        private final String mimeType;
-        private final byte[] body;
-        private final List<Header> headers;
-
-        CannedResponse(final int statusCode, final String mimeType, final byte[] body, final List<Header> headers) {
-            this.statusCode = statusCode;
-            this.mimeType = mimeType;
-            this.body = body == null ? EMPTY_BYTES : body;
-            this.headers = headers != null ? headers : EMPTY_HEADERS;
-        }
-
-        CannedResponse(final int statusCode, final String mimeType, final String body, final List<Header> headers) {
-            this(statusCode, mimeType, asBytes(body), headers);
-        }
-
-        void respond(final HttpServletResponse httpServletResponse) throws IOException {
-            httpServletResponse.setHeader("Content-Type", mimeType);
-            for (Header hdr : headers) {
-                httpServletResponse.addHeader(hdr.name, hdr.value);
+    private void delayResponse() {
+        if (delayMillis > 0) {
+            try {
+                Thread.sleep(delayMillis);
+            } catch (InterruptedException e) {
+                // Probably the test is being killed.
+                throw new RuntimeException(e);
             }
-            httpServletResponse.setStatus(statusCode);
-            OutputStream writer = httpServletResponse.getOutputStream();
-            writer.write(body);
-            writer.flush();
-            writer.close();
         }
     }
+
+    public Expectation delay(int value, TimeUnit unit) {
+        delayMillis = TimeUnit.MILLISECONDS.convert(value, unit);
+        return this;
+    }
+
+static class CannedResponse {
+    private final int statusCode;
+    private final String mimeType;
+    private final byte[] body;
+    private final List<Header> headers;
+
+    CannedResponse(final int statusCode, final String mimeType, final byte[] body, final List<Header> headers) {
+        this.statusCode = statusCode;
+        this.mimeType = mimeType;
+        this.body = body == null ? EMPTY_BYTES : body;
+        this.headers = headers != null ? headers : EMPTY_HEADERS;
+    }
+
+    CannedResponse(final int statusCode, final String mimeType, final String body, final List<Header> headers) {
+        this(statusCode, mimeType, asBytes(body), headers);
+    }
+
+    void respond(final HttpServletResponse httpServletResponse) throws IOException {
+        httpServletResponse.setHeader("Content-Type", mimeType);
+        for (Header hdr : headers) {
+            httpServletResponse.addHeader(hdr.name, hdr.value);
+        }
+        httpServletResponse.setStatus(statusCode);
+        OutputStream writer = httpServletResponse.getOutputStream();
+        writer.write(body);
+        writer.flush();
+        writer.close();
+    }
+
+}
 
     static byte[] asBytes(String string) {
         try {
