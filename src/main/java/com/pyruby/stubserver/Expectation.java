@@ -33,6 +33,17 @@ public class Expectation {
     }
 
     /**
+     * Delay the response by the specified period, only when this expectation matches.
+     * @param value The duration of the delay, using the units specified
+     * @param unit The units for the delay
+     * @return itself, for chaining.
+     */
+    public Expectation delay(int value, TimeUnit unit) {
+        delayMillis = TimeUnit.MILLISECONDS.convert(value, unit);
+        return this;
+    }
+
+    /**
      * Define how the server should respond to an expected request.
      *
      * @param statusCode The response status code, e.g. 204
@@ -142,11 +153,6 @@ public class Expectation {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public Expectation delay(int value, TimeUnit unit) {
-        delayMillis = TimeUnit.MILLISECONDS.convert(value, unit);
-        return this;
     }
 
 static class CannedResponse {
