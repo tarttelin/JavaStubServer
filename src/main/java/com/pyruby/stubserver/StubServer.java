@@ -102,6 +102,7 @@ public class StubServer {
         connector.setKeystore(httpsSettings.getKeystore());
         connector.setPassword(httpsSettings.getKeystorePassword());
         connector.setKeyPassword(httpsSettings.getKeyPassword());
+        connector.setExcludeCipherSuites(httpsSettings.getExcludedCiphers());
         server.addConnector(connector);
     }
 
