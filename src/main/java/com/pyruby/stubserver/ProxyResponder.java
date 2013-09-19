@@ -2,12 +2,16 @@ package com.pyruby.stubserver;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.pyruby.stubserver.Header.header;
 
 class ProxyResponder extends StubMethod {
 
@@ -33,13 +37,15 @@ class ProxyResponder extends StubMethod {
     }
 
     private void forwardRequest(String path, String method, byte[] requestBody,
-                                Map<String, String> headers) throws IOException {
+                                Map<String, Header> headers) throws IOException {
         URL url = new URL(baseUrl + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
         if (headers != null && !headers.isEmpty()) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                conn.setRequestProperty(entry.getKey(), entry.getValue());
+            for (Header header : headers.values()) {
+                for (String headerValue : header.values) {
+                    conn.setRequestProperty(header.name, headerValue);
+                }
             }
         }
         if (requestBody != null && requestBody.length > 0 && !method.equals("DELETE")) {
@@ -58,7 +64,7 @@ class ProxyResponder extends StubMethod {
         List<Header> headerList = new ArrayList<Header>();
         for (Map.Entry<String, List<String>> entry : conn.getHeaderFields().entrySet()) {
             if (entry.getKey() != null) {
-                headerList.add(new Header(entry.getKey(), entry.getValue().get(0)));
+                headerList.add(header(entry.getKey(), entry.getValue().get(0)));
             }
         }
         response = new Expectation.CannedResponse(conn.getResponseCode(), conn.getContentType(), bytes, headerList);

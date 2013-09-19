@@ -2,10 +2,9 @@ package com.pyruby.stubserver;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+
+import static com.pyruby.stubserver.Header.header;
 
 /**
  * A factory class for constructing the expectation for the {@link StubServer#expect} method. Only supports
@@ -23,7 +22,7 @@ public class StubMethod {
     /**
      * The headers received in the matched request.
      */
-    public Map<String, String> requestHeaders;
+    public Map<String, Header> requestHeaders;
     /**
      * The query parameters in the matched request
      */
@@ -149,11 +148,11 @@ public class StubMethod {
     boolean matches(String target, HttpServletRequest httpServletRequest) {
         boolean match = target.matches(url) && httpServletRequest.getMethod().equals(method);
         if (match) {
-            Map<String, String> hdrs = copyTheRequestHeaders(httpServletRequest);
+            Map<String, Header> hdrs = copyTheRequestHeaders(httpServletRequest);
             for (String key : headerExpectations.keySet()) {
                 String exp = headerExpectations.get(key);
-                String act = hdrs.get(key);
-                if (act == null || !act.matches(exp)) {
+                Header act = hdrs.get(key);
+                if (act == null || !act.values.get(0).matches(exp)) {
                     return false;
                 }
             }
@@ -168,17 +167,22 @@ public class StubMethod {
         return match;
     }
 
-    protected Map<String, String> copyTheRequestHeaders(HttpServletRequest httpServletRequest) {
+    protected Map<String, Header> copyTheRequestHeaders(HttpServletRequest httpServletRequest) {
         Enumeration headerNames = httpServletRequest.getHeaderNames();
-        Map<String, String> headers = new LinkedHashMap<String, String>();
+        Map<String, Header> headers = new LinkedHashMap<String, Header>();
         while (headerNames.hasMoreElements()) {
             String headerName = (String) headerNames.nextElement();
-            headers.put(headerName, httpServletRequest.getHeader(headerName));
+            Enumeration headerValues = httpServletRequest.getHeaders(headerName);
+            List<String> headerStringValues = new ArrayList<String>();
+            while(headerValues.hasMoreElements()) {
+                headerStringValues.add((String) headerValues.nextElement());
+            }
+            headers.put(headerName, header(headerName, headerStringValues));
         }
         return headers;
     }
 
-    private void copyTheBody(HttpServletRequest httpServletRequest) throws IOException {
+        private void copyTheBody(HttpServletRequest httpServletRequest) throws IOException {
         BufferedInputStream in = new BufferedInputStream(httpServletRequest.getInputStream());
         body = copyBytes(in);
         in.close();

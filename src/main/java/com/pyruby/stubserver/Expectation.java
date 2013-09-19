@@ -34,8 +34,9 @@ public class Expectation {
 
     /**
      * Delay the response by the specified period, only when this expectation matches.
+     *
      * @param value The duration of the delay, using the units specified
-     * @param unit The units for the delay
+     * @param unit  The units for the delay
      * @return itself, for chaining.
      */
     public Expectation delay(int value, TimeUnit unit) {
@@ -155,36 +156,38 @@ public class Expectation {
         }
     }
 
-static class CannedResponse {
-    private final int statusCode;
-    private final String mimeType;
-    private final byte[] body;
-    private final List<Header> headers;
+    static class CannedResponse {
+        private final int statusCode;
+        private final String mimeType;
+        private final byte[] body;
+        private final List<Header> headers;
 
-    CannedResponse(final int statusCode, final String mimeType, final byte[] body, final List<Header> headers) {
-        this.statusCode = statusCode;
-        this.mimeType = mimeType;
-        this.body = body == null ? EMPTY_BYTES : body;
-        this.headers = headers != null ? headers : EMPTY_HEADERS;
-    }
-
-    CannedResponse(final int statusCode, final String mimeType, final String body, final List<Header> headers) {
-        this(statusCode, mimeType, asBytes(body), headers);
-    }
-
-    void respond(final HttpServletResponse httpServletResponse) throws IOException {
-        httpServletResponse.setHeader("Content-Type", mimeType);
-        for (Header hdr : headers) {
-            httpServletResponse.addHeader(hdr.name, hdr.value);
+        CannedResponse(final int statusCode, final String mimeType, final byte[] body, final List<Header> headers) {
+            this.statusCode = statusCode;
+            this.mimeType = mimeType;
+            this.body = body == null ? EMPTY_BYTES : body;
+            this.headers = headers != null ? headers : EMPTY_HEADERS;
         }
-        httpServletResponse.setStatus(statusCode);
-        OutputStream writer = httpServletResponse.getOutputStream();
-        writer.write(body);
-        writer.flush();
-        writer.close();
-    }
 
-}
+        CannedResponse(final int statusCode, final String mimeType, final String body, final List<Header> headers) {
+            this(statusCode, mimeType, asBytes(body), headers);
+        }
+
+        void respond(final HttpServletResponse httpServletResponse) throws IOException {
+            httpServletResponse.setHeader("Content-Type", mimeType);
+            for (Header hdr : headers) {
+                for (String headerValue : hdr.values) {
+                    httpServletResponse.addHeader(hdr.name, headerValue);
+                }
+            }
+            httpServletResponse.setStatus(statusCode);
+            OutputStream writer = httpServletResponse.getOutputStream();
+            writer.write(body);
+            writer.flush();
+            writer.close();
+        }
+
+    }
 
     static byte[] asBytes(String string) {
         try {

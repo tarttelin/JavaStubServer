@@ -2,7 +2,7 @@ apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven'
 
-version = '0.6'
+version = '0.7'
 
 repositories {
     mavenCentral()

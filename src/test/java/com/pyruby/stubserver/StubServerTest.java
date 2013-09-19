@@ -8,10 +8,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.pyruby.stubserver.Header.header;
@@ -45,7 +42,7 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlAndThenReturnTheExpectedResponse_withHeaders() throws IOException {
         server.expect(get("/my/expected/context")).thenReturn(200, "application/json", "My expected response",
-            headers(header("Set-Cookie", "c1=aaa"), header("Set-Cookie", "c2=bbb")));
+                headers(header("Set-Cookie", "c1=aaa"), header("Set-Cookie", "c2=bbb")));
 
         TestStubResponse response = makeRequest("/my/expected/context", "GET");
 
@@ -115,10 +112,10 @@ public class StubServerTest {
             res[i] = (byte) i;
         }
 
-        server.expect(get("/my/expected/context").ifContentType("application/octet\\-stream"))
-            .thenReturn(200, "application/octet-stream", res);
+        server.expect(get("/my/expected/context").ifContentType("application/octet-stream"))
+                .thenReturn(200, "application/octet-stream", res);
 
-        TestStubResponse response = makeRequest("/my/expected/context", "GET", "", "Content-Type", "application/octet-stream");
+        TestStubResponse response = makeRequest("/my/expected/context", "GET", "", headers(header("Content-Type", "application/octet-stream")));
 
         server.verify();
 
@@ -135,9 +132,9 @@ public class StubServerTest {
         }
 
         server.expect(post("/my/expected/context").ifContentType("application/octet-stream"))
-            .thenReturn(204, "application/octet-stream", "");
+                .thenReturn(204, "application/octet-stream", "");
 
-        TestStubResponse response = makeRequest("/my/expected/context", "POST", req, "Content-Type", "application/octet-stream");
+        TestStubResponse response = makeRequest("/my/expected/context", "POST", req, headers(header("Content-Type", "application/octet-stream")));
 
         server.verify();
 
@@ -163,9 +160,9 @@ public class StubServerTest {
     @Test
     public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeader() throws IOException {
         server.expect(get("/my/expected/context").ifHeader("x-test", "foobar"))
-            .thenReturn(200, "application/json", "My expected response");
+                .thenReturn(200, "application/json", "My expected response");
 
-        makeRequest("/my/expected/context", "GET", "", "x-test", "foobar");
+        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "foobar")));
 
         server.verify();
     }
@@ -174,7 +171,7 @@ public class StubServerTest {
     public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedHeaderExpectations() throws IOException {
         server.expect(get("/some/url").ifHeader("Content-Type", "foobar")).thenReturn(200, "text/html", "Got me");
 
-        makeRequest("/some/url", "GET", "", "Content-Type", "stuff");
+        makeRequest("/some/url", "GET", "", headers(header("Content-Type", "stuff")));
 
         try {
             server.verify();
@@ -208,7 +205,19 @@ public class StubServerTest {
         TestStubResponse response = makeRequest("/some/posted/json", "POST", json, "application/checkMe");
 
         assertEquals(201, response.responseCode);
-        assertEquals("application/checkMe", postedRequest.requestHeaders.get("Content-Type"));
+        assertEquals(1, postedRequest.requestHeaders.get("Content-Type").values.size());
+        assertEquals("application/checkMe", postedRequest.requestHeaders.get("Content-Type").values.get(0));
+    }
+
+    @Test
+    public void expect_shouldAcceptAPostRequestWithMultiValuedHeadersAndCaptureThemForLaterAssertion() throws Exception {
+        StubMethod postedRequest = get("/some/posted/json");
+        server.expect(postedRequest).thenReturn(200);
+
+        TestStubResponse response = makeRequest("/some/posted/json", "GET", "", headers(header("HeaderName", "Value1", "Value2")));
+
+        assertEquals(200, response.responseCode);
+        assertEquals(header("HeaderName", "Value1", "Value2"), postedRequest.requestHeaders.get("HeaderName"));
     }
 
     @Test
@@ -345,38 +354,40 @@ public class StubServerTest {
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : query.entrySet()) {
             body.append(URLEncoder.encode(entry.getKey(), "UTF-8"))
-                .append("=")
-                .append(URLEncoder.encode(entry.getValue(), "UTF-8"))
-                .append('&');
+                    .append("=")
+                    .append(URLEncoder.encode(entry.getValue(), "UTF-8"))
+                    .append('&');
         }
         body.deleteCharAt(body.length() - 1);
         return makeRequest(path, method, body.toString());
     }
 
     private TestStubResponse makeRequest(String path, String method) throws IOException {
-        return makeRequest(path, method, null, null);
+        return makeRequest(path, method, "");
     }
 
     private TestStubResponse makeRequest(String path, String method, String body) throws IOException {
-        return makeRequest(path, method, body, null, null);
+        return makeRequest(path, method, body, new ArrayList<Header>());
     }
 
     private TestStubResponse makeRequest(String path, String method, String body, String contentType) throws IOException {
-        return makeRequest(path, method, body, "Content-Type", contentType);
+        return makeRequest(path, method, body, headers(header("Content-Type", contentType)));
     }
 
     private TestStubResponse makeRequest(String path, String method, String body,
-                                         String headerKey, String headerValue) throws IOException {
-        return makeRequest(path, method, Expectation.asBytes(body), headerKey, headerValue);
+                                         List<Header> headers) throws IOException {
+        return makeRequest(path, method, Expectation.asBytes(body), headers);
     }
 
     private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
-                                         String headerKey, String headerValue) throws IOException {
+                                         List<Header> headers) throws IOException {
         URL url = new URL(baseUrl + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
-        if (headerKey != null && headerValue != null) {
-            conn.setRequestProperty(headerKey, headerValue);
+        for (Header header : headers) {
+            for (String headerValue : header.values) {
+                conn.addRequestProperty(header.name, headerValue);
+            }
         }
         if (requestBody != null && requestBody.length > 0 && !method.equals("DELETE")) {
             conn.setDoOutput(true);
