@@ -9,6 +9,7 @@ repositories {
 }
 
 dependencies {
+    //compile "javax.servlet:servlet-api:2.5", "org.eclipse.jetty:jetty-server:9.0.5.v20130815"
     compile "javax.servlet:servlet-api:2.5", "org.mortbay.jetty:jetty:6.1.26"
     testCompile "junit:junit:4.8.2"
     testCompile "commons-io:commons-io:2.4"
