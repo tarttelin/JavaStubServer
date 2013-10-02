@@ -48,10 +48,18 @@ public class StubServer {
     private ProxyResponder proxy;
 
     /**
+     * Provides a shortcut for <code>new StubServer(0)</code>, which creates an instance using any free ephemeral port.
+     * The actual port chosen can be obtained using {@link #getLocalPort()}.
+     */
+    public StubServer() {
+        this(0, null);
+    }
+
+    /**
      * It's usually best to use ports that are above 1024.  If the port is already bound by another process, the server
      * won't start.
      * @param port the port that the stub server should bind to.  This should match the port your system under test is
-     * configured to call
+     * configured to call. If 0 is specified, an available ephemeral port is chosen automatically.
      */
     public StubServer(int port) {
         this(port, null);
@@ -61,6 +69,7 @@ public class StubServer {
      * Use this constructor if you want to handle SSL requests. Note that it's http OR https - if you need to handle both
      * just spin up two StubServer instances!
      * @param port port to bind to. This should match the port that your system under test is configured to call.
+     *        If 0 is specified, an available ephemeral port is chosen automatically.
      * @param httpsSettings The SSL keystore settings to use.
      */
     public StubServer(int port, HttpsSettings httpsSettings) {
@@ -182,7 +191,7 @@ public class StubServer {
 	}
 	
    /**
-     * Returns the assigned port number - useful for when the server was created with port number of "0" so that the actual
+     * Returns the assigned port number. This is useful when the server was created with port number 0 so that the actual
      * ephemeral port number can be retrieved.
      */
     public int getLocalPort() {

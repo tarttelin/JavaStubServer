@@ -350,6 +350,14 @@ public class StubServerTest {
 
     }
 
+    @Test
+    public void zeroPort_shouldCauseStartupUsingAHighPort() throws IOException {
+        server.stop();
+        server = new StubServer();
+        server.start();
+        assertTrue(server.getLocalPort() > 1024);
+    }
+
     private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
         StringBuilder body = new StringBuilder();
         for (Map.Entry<String, String> entry : query.entrySet()) {
