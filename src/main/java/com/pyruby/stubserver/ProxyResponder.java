@@ -1,5 +1,7 @@
 package com.pyruby.stubserver;
 
+import org.mortbay.jetty.Request;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedInputStream;
@@ -27,9 +29,11 @@ class ProxyResponder extends StubMethod {
         response.respond(httpServletResponse);
     }
 
-    boolean matches(String target, HttpServletRequest request) {
+    boolean matches(HttpServletRequest request) {
         try {
-            forwardRequest(target, request.getMethod(), this.copyBytes(request.getInputStream()), copyTheRequestHeaders(request));
+            Request jettyRequest = (Request) request;
+            forwardRequest(jettyRequest.getUri().getPathAndParam(), request.getMethod(), this.copyBytes(request.getInputStream()),
+                copyTheRequestHeaders(request));
         } catch (IOException e) {
             return false;
         }

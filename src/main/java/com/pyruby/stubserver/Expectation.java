@@ -123,15 +123,15 @@ public class Expectation {
         throw new IllegalStateException("Stub server does not have a proxy configured");
     }
 
-    boolean matches(String target, HttpServletRequest httpServletRequest) {
+    boolean matches(HttpServletRequest httpServletRequest) {
         if (satisfied) return false;
-        boolean matched = stubMethodMatches(target, httpServletRequest);
+        boolean matched = stubMethodMatches(httpServletRequest);
         if (matched) satisfied = true;
         return matched;
     }
 
-    protected boolean stubMethodMatches(String target, HttpServletRequest httpServletRequest) {
-        return stubbedMethod.matches(target, httpServletRequest);
+    protected boolean stubMethodMatches(HttpServletRequest httpServletRequest) {
+        return stubbedMethod.matches(httpServletRequest);
     }
 
     void verify() {
