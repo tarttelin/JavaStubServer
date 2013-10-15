@@ -1,1 +1,67 @@
-Java stub server
+<html>
+    <head>
+        <title>Java Stub Server</title>
+        <style>
+            body {
+                width: 100%;
+                margin: 0;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+            #head {
+                background-image: linear-gradient(#006400, #003500);
+                color: white;
+                padding-top: 0.4em;
+                font-size: 1.5em;
+                text-shadow: #003500;
+                width: 100%;
+                height: 2.0em;
+            }
+            #title {
+                font-size: 1.2em;
+                padding-left: 50px;
+            }
+            #content {
+                padding-left: 1em;
+                padding-right: 3em;
+                font-size: 1em;
+                min-height: 400px;
+                background-color: #edf6ff;
+                border-radius: 0.5em;
+                margin: 1em;
+                border-color: #d9f6ea;
+                border-width: 1px;
+                border-style: solid;
+            }
+            .deps {
+                list-style: square;
+            }
+            footer {
+                font-size: 0.7em;
+                padding-left: 1em;
+                border-top: 1px solid black;
+            }
+        </style>
+    </head>
+    <body>
+    <a href="https://github.com/tarttelin/JavaStubServer"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png" alt="Fork me on GitHub"></a>
+    <div id="head"><span id="title">Java Stub Server</span> - Integration testing for HTTP</div>
+        <div id="content">
+            <h2>Java Stub Server is an embedded HTTP server, started up by your tests, set up with expectations like a mock, and called by your application under test.</h2>
+            <p>Using embedded <b>Jetty</b> to spin up a server, with <b>Mockito-esque</b> expectations to match URLs, verbs and headers, then return the expected response.</p>
+            <p>Capture the request so you can assert on the content, or just <b>verify</b> the call was made.</p>
+            <hr>
+            <h3>Example</h3>
+            <p>As the library was written Test First, the repository is full of useful tests which serve as the most comprehensive documentation.</p>
+            <hr>
+            <h3>Dependency</h3>
+            <p>The library is available from Maven Central, and can be included in your projects dependencies</p>
+            <ul class="deps">
+                <li>groupId: com.pyruby</li>
+                <li>artifactId: java-stub-server</li>
+            </ul>
+        </div>
+        <footer>
+            &copy;PyRuby LTD 2013 - <a href="http://www.pyruby.com">website</a>
+        </footer>
+    </body>
+</html>
