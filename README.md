@@ -23,15 +23,11 @@ Example test:<br>
 ```
 With this approach, it feels more like a unit test, but it allows you to totally black box the system under test.
 
-## NOTE:
+## Build / dependency
 
-- Given the plethora of cat skinning devices, I have not prescribed a mechanism to build StubServer, or a way of
-downloading it's dependencies.  It was built with the following:-
+- The project is built with gradle. To build from source, install gradle and run gradle clean build
 
-  jetty-6.1.26.jar<br>
-  jetty-util-6.1.26.jar<br>
-  servlet-api-2.5-20081211.jar<br>
-  junit-4.7.jar<br>
+The library is available from maven central as:
 
-Later or earlier versions may or may not work.
-
+groupId:    com.pyruby
+artifactId: java-stub-server
