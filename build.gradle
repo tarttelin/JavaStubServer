@@ -5,7 +5,7 @@ apply plugin: 'signing'
 
 archivesBaseName = 'java-stub-server'
 group = 'com.pyruby'
-version = '0.10-SNAPSHOT'
+version = '0.10'
 
 repositories {
     mavenCentral()
@@ -42,7 +42,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             beforeDeployment { deployment -> signing.signPom(deployment) }
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") { // snapshot - "https://oss.sonatype.org/content/repositories/snapshots"
                 authentication(userName: sonatypeUsername, password: sonatypePassword)
             }
 
