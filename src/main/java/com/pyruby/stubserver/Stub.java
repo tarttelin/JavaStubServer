@@ -8,8 +8,8 @@ public class Stub extends Expectation {
     }
 
     @Override
-    boolean matches(String target, HttpServletRequest httpServletRequest) {
-        return stubMethodMatches(target, httpServletRequest);
+    boolean matches(HttpServletRequest httpServletRequest) {
+        return stubMethodMatches(httpServletRequest);
     }
 
     @Override

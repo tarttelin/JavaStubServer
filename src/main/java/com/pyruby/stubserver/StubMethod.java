@@ -1,5 +1,7 @@
 package com.pyruby.stubserver;
 
+import org.mortbay.jetty.Request;
+
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.util.*;
@@ -145,8 +147,9 @@ public class StubMethod {
     }
 
     @SuppressWarnings({"unchecked"})
-    boolean matches(String target, HttpServletRequest httpServletRequest) {
-        boolean match = target.matches(url) && httpServletRequest.getMethod().equals(method);
+    boolean matches(HttpServletRequest httpServletRequest) {
+        Request jettyRequest = (Request) httpServletRequest;
+        boolean match = jettyRequest.getUri().getPathAndParam().matches(url) && httpServletRequest.getMethod().equals(method);
         if (match) {
             Map<String, Header> hdrs = copyTheRequestHeaders(httpServletRequest);
             for (String key : headerExpectations.keySet()) {

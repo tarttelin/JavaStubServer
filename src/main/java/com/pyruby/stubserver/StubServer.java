@@ -201,13 +201,13 @@ public class StubServer {
     private class StubHandler extends AbstractHandler {
         public void handle(String target, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, int dispatch) throws IOException, ServletException {
             for (Expectation expected : expectations) {
-                if (expected.matches(target, httpServletRequest)) {
+                if (expected.matches(httpServletRequest)) {
                     expected.respond(httpServletResponse);
                     return;
                 }
             }
             if (proxy != null) {
-                proxy.matches(target, httpServletRequest);
+                proxy.matches(httpServletRequest);
                 proxy.respond(httpServletResponse);
             } else {
                 nullResponse.respond(httpServletResponse);

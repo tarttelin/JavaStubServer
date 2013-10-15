@@ -15,10 +15,10 @@ class ProxiableExpectation extends Expectation {
     }
 
     @Override
-    boolean matches(String target, HttpServletRequest httpServletRequest) {
-        boolean matches = super.matches(target, httpServletRequest);
+    boolean matches(HttpServletRequest httpServletRequest) {
+        boolean matches = super.matches(httpServletRequest);
         if (matches && delegating) {
-            return proxyResponder.matches(target, httpServletRequest);
+            return proxyResponder.matches(httpServletRequest);
         } else {
             return matches;
         }

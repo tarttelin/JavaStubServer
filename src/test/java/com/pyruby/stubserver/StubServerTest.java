@@ -91,6 +91,15 @@ public class StubServerTest {
     }
 
     @Test
+    public void expect_shouldAcceptAGetRequestWithMatrixParamsToAUrlThatMatchesARegEx() throws IOException {
+        server.expect(get("/my/expected;matrix=param1/another;matrix=param2")).thenReturn(200, "text/plain", "");
+
+        makeRequest("/my/expected;matrix=param1/another;matrix=param2", "GET");
+
+        server.verify();
+    }
+
+    @Test
     public void expect_shouldAcceptAPostRequestWithACollectionOfPostParameters() throws IOException {
         StubMethod expectedPath = post("/my/posted/context");
         server.expect(expectedPath).thenReturn(201);
@@ -271,10 +280,10 @@ public class StubServerTest {
         delegate.start();
         try {
             server.proxy("http://localhost:" + delegate.getLocalPort());
-            delegate.expect(get("/unmatched")).thenReturn(200, "text/html", "hit delegate");
+            delegate.expect(get("/unmatched;matrix=param")).thenReturn(200, "text/html", "hit delegate");
             server.expect(get("/matched")).thenReturn(200, "text/html", "hit stub");
 
-            TestStubResponse delegateResponse = makeRequest("/unmatched", "GET");
+            TestStubResponse delegateResponse = makeRequest("/unmatched;matrix=param", "GET");
             TestStubResponse stubResponse = makeRequest("/matched", "GET");
 
             server.verify();
@@ -292,10 +301,10 @@ public class StubServerTest {
         delegate.start();
         try {
             server.proxy("http://localhost:" + delegate.getLocalPort());
-            delegate.expect(get("/matched")).thenReturn(200, "text/html", "hit delegate");
-            server.expect(get("/matched")).thenDelegate();
+            delegate.expect(get("/matched;matrix=param")).thenReturn(200, "text/html", "hit delegate");
+            server.expect(get("/matched;matrix=param")).thenDelegate();
 
-            TestStubResponse response = makeRequest("/matched", "GET");
+            TestStubResponse response = makeRequest("/matched;matrix=param", "GET");
 
             server.verify();
             delegate.verify();
