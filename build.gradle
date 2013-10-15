@@ -3,8 +3,9 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
+archivesBaseName = 'java-stub-server'
 group = 'com.pyruby'
-version = '0.8'
+version = '0.10-SNAPSHOT'
 
 repositories {
     mavenCentral()

@@ -104,7 +104,7 @@ public class Expectation {
     }
 
     /**
-     * Proxy this request to the target server defined in {@link com.pyruby.stubserver.StubServer()#proxy}
+     * Proxy this request to the target server defined in {@link StubServer#proxy(String)}
      */
     public void thenDelegate() {
         throw new IllegalStateException("Stub server does not have a proxy configured");
