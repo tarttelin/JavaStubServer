@@ -1,7 +1,9 @@
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
+group = 'com.pyruby'
 version = '0.8'
 
 repositories {
@@ -15,19 +17,66 @@ dependencies {
     testCompile "commons-io:commons-io:2.4"
 }
 
-task writeNewPom << {
-    pom {
-        project {
-            inceptionYear '2011'
-            groupId 'com.pyruby'
-            licenses {
-                license {
-                    name 'freeBSD'
-                    url 'http://www.freebsd.org/copyright/freebsd-license.html'
-                    distribution 'repo'
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from 'src/main'
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { deployment -> signing.signPom(deployment) }
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: sonatypeUsername, password: sonatypePassword)
+            }
+
+            pom.project {
+                name 'JavaStubServer'
+                packaging 'jar'
+                description 'JavaStubServer is an HTTP server that tests can drive with a mockito-esque feel to return expected results and verify calls were made'
+                url 'http://tarttelin.github.io/JavaStubServer/'
+
+                scm {
+                    url 'scm:git@github.com:tarttelin/JavaStubServer.git'
+                    connection 'scm:git@github.com:tarttelin/JavaStubServer.git'
+                    developerConnection 'scm:git@github.com:tarttelin/JavaStubServer.git'
+                }
+
+                licenses {
+                    license {
+                        name 'FreeBSD'
+                        url 'http://www.freebsd.org/copyright/freebsd-license.html'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'tarttelin'
+                        name 'Chris Tarttelin'
+                    }
+                    developer {
+                        id 'chris-h-barrett'
+                        name 'Chris Barrett'
+                    }
                 }
             }
         }
-    }.writeTo("${buildDir}/newpom.xml")
+    }
 }
 

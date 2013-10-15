@@ -56,19 +56,6 @@ public class Expectation {
     /**
      * Define how the server should respond to an expected request.  My current use cases don't include specific
      * handling multi-part responses, so I haven't implemented any.
-     * This method is deprecated because it expects a mime type when there is no response - use thenReturn(int statusCode) instead.
-     *
-     * @param statusCode The response status code, e.g. 200
-     * @param mimeType   The content type of the response, e.g. text/html
-     */
-    @Deprecated
-    public void thenReturn(int statusCode, String mimeType) {
-        thenReturn(statusCode, mimeType, EMPTY_BYTES, EMPTY_HEADERS);
-    }
-
-    /**
-     * Define how the server should respond to an expected request.  My current use cases don't include specific
-     * handling multi-part responses, so I haven't implemented any.
      *
      * @param statusCode   The response status code, e.g. 200
      * @param mimeType     The content type of the response, e.g. text/html
