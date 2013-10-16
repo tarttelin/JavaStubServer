@@ -18,12 +18,12 @@ import static org.junit.Assert.*;
 
 public class StubServerTest {
 
-    protected String baseUrl = "http://localhost:44804";
+    protected String baseUrl = "http://localhost:";
     protected StubServer server;
 
     @Before
     public void setUp() throws IOException {
-        server = new StubServer(44804);
+        server = new StubServer();
         server.start();
     }
 
@@ -34,6 +34,7 @@ public class StubServerTest {
 
     @Test
     public void start_shouldStartAWebServerOnTheDesignatedPort() throws IOException {
+
         TestStubResponse response = makeRequest("", "GET");
 
         assertNotNull(response);
@@ -360,11 +361,15 @@ public class StubServerTest {
     }
 
     @Test
-    public void zeroPort_shouldCauseStartupUsingAHighPort() throws IOException {
+    public void constructWithPort_shouldCauseServerToBindToThatPort() throws IOException {
         server.stop();
-        server = new StubServer();
+        server = new StubServer(48808);
         server.start();
-        assertTrue(server.getLocalPort() > 1024);
+        server.expect(get("/foo")).thenReturn(200, "text/plain", "got it");
+
+        makeRequest("/foo", "GET", new byte[0], new ArrayList<Header>(), 48808);
+
+        server.verify();
     }
 
     private TestStubResponse makeRequest(String path, String method, Map<String, String> query) throws IOException {
@@ -398,7 +403,11 @@ public class StubServerTest {
 
     private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
                                          List<Header> headers) throws IOException {
-        URL url = new URL(baseUrl + path);
+        return makeRequest(path, method, requestBody, headers, server.getLocalPort());
+    }
+    private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
+                                         List<Header> headers, int port) throws IOException {
+        URL url = new URL(baseUrl + port + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
         for (Header header : headers) {

@@ -37,8 +37,8 @@ public class HttpsTest extends StubServerTest {
         System.setProperty("javax.net.ssl.trustStore", getKeystorePath());
         System.setProperty("javax.net.ssl.trustStorePassword", keystorePasword);
 
-        baseUrl = "https://localhost:44804";
-        server = new StubServer(44804, new HttpsSettings(getKeystorePath(), keystorePasword, keyPassword));
+        baseUrl = "https://localhost:";
+        server = new StubServer(0, new HttpsSettings(getKeystorePath(), keystorePasword, keyPassword));
         server.start();
 
     }

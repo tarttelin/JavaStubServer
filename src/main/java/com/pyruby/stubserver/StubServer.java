@@ -162,7 +162,6 @@ public class StubServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**
