@@ -197,6 +197,10 @@ public class StubServer {
         return server.getConnectors()[0].getLocalPort();
     }
 
+    public HttpsSettings getHttpsSettings() {
+        return httpsSettings;
+    }
+
     private class StubHandler extends AbstractHandler {
         public void handle(String target, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, int dispatch) throws IOException, ServletException {
             for (Expectation expected : expectations) {

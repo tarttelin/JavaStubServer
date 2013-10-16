@@ -363,7 +363,7 @@ public class StubServerTest {
     @Test
     public void constructWithPort_shouldCauseServerToBindToThatPort() throws IOException {
         server.stop();
-        server = new StubServer(48808);
+        server = new StubServer(48808, server.getHttpsSettings());
         server.start();
         server.expect(get("/foo")).thenReturn(200, "text/plain", "got it");
 
