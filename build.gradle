@@ -4,7 +4,7 @@ apply plugin: 'maven'
 
 archivesBaseName = 'java-stub-server'
 group = 'com.pyruby'
-version = '0.10'
+version = '0.11-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -46,7 +46,8 @@ if (hasProperty('sonatypeUsername')) {
         repositories {
             mavenDeployer {
                 beforeDeployment { deployment -> signing.signPom(deployment) }
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") { // snapshot - "https://oss.sonatype.org/content/repositories/snapshots"
+//                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") { // release
+                repository(url: "https://oss.sonatype.org/content/repositories/snapshots") { // snapshot
                     authentication(userName: sonatypeUsername, password: sonatypePassword)
                 }
 
