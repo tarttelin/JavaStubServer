@@ -1,3 +1,6 @@
+JavaStubServer [![Build Status](https://api.travis-ci.org/tarttelin/JavaStubServer.png)](https://travis-ci.org/tarttelin/JavaStubServer/builds)
+==============
+
 Stub server is intended to give a mockito-esque feel to a stubbed HTTP server.  This allows you to test
 an application that hits external HTTP interfaces as a proper black box.  Take this example
 <p>
