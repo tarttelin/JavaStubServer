@@ -92,10 +92,19 @@ public class StubServerTest {
     }
 
     @Test
-    public void expect_shouldAcceptAGetRequestWithMatrixParamsToAUrlThatMatchesARegEx() throws IOException {
+    public void expect_shouldAcceptAGetRequestWithMatrixParams() throws IOException {
         server.expect(get("/my/expected;matrix=param1/another;matrix=param2")).thenReturn(200, "text/plain", "");
 
         makeRequest("/my/expected;matrix=param1/another;matrix=param2", "GET");
+
+        server.verify();
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestWithQueryParams() throws IOException {
+        server.expect(get("/my/expected?param1=value1&param2=value2")).thenReturn(200, "text/plain", "");
+
+        makeRequest("/my/expected?param1=value1&param2=value2", "GET");
 
         server.verify();
     }

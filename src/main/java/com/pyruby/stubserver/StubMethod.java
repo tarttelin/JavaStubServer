@@ -1,6 +1,8 @@
 package com.pyruby.stubserver;
 
+import org.mortbay.jetty.HttpURI;
 import org.mortbay.jetty.Request;
+import org.mortbay.util.StringUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
@@ -16,8 +18,8 @@ import static com.pyruby.stubserver.Header.header;
  * the request headers, the query parameters and the request body.
  */
 public class StubMethod {
+    private final HttpURI url;
     private final String method;
-    private final String url;
 
     private final Map<String, String> headerExpectations = new HashMap<String, String>();
 
@@ -36,7 +38,7 @@ public class StubMethod {
 
     protected StubMethod(String method, String url) {
         this.method = method;
-        this.url = url;
+        this.url = new HttpURI(url);
     }
 
     /**
@@ -148,10 +150,11 @@ public class StubMethod {
 
     @SuppressWarnings({"unchecked"})
     boolean matches(HttpServletRequest httpServletRequest) {
-        Request jettyRequest = (Request) httpServletRequest;
-        boolean match = jettyRequest.getUri().getPathAndParam().matches(url) && httpServletRequest.getMethod().equals(method);
-        if (match) {
+        boolean matchFound = checkForRequestMatch(httpServletRequest);
+
+        if (matchFound) {
             Map<String, Header> hdrs = copyTheRequestHeaders(httpServletRequest);
+
             for (String key : headerExpectations.keySet()) {
                 String exp = headerExpectations.get(key);
                 Header act = hdrs.get(key);
@@ -159,15 +162,18 @@ public class StubMethod {
                     return false;
                 }
             }
+
             requestHeaders = hdrs;
             query = httpServletRequest.getParameterMap();
+
             try {
                 copyTheBody(httpServletRequest);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        return match;
+
+        return matchFound;
     }
 
     protected Map<String, Header> copyTheRequestHeaders(HttpServletRequest httpServletRequest) {
@@ -201,6 +207,14 @@ public class StubMethod {
             n = input.read(buffer);
         }
         return outStream.toByteArray();
+    }
+
+    private boolean checkForRequestMatch(HttpServletRequest httpServletRequest) {
+        boolean requestPathMatches = httpServletRequest.getRequestURI().matches(url.getPathAndParam());
+        boolean methodMatches = httpServletRequest.getMethod().equals(this.method);
+        boolean queryStringMatches = url.getQuery() == null || url.getQuery().equals(httpServletRequest.getQueryString());
+
+        return requestPathMatches && methodMatches && queryStringMatches;
     }
 
     @Override
