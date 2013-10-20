@@ -37,6 +37,13 @@
             .deps {
                 list-style: square;
             }
+            pre {
+                border: 1px solid #959495;
+                border-radius: 0.3em;
+                background-color: #dfdfdf;
+                padding-top: 0.5em;
+                padding-bottom: 0.5em;
+            }
             footer {
                 font-size: 0.7em;
                 padding-left: 1em;
@@ -52,15 +59,90 @@
             <p>Using embedded <b>Jetty</b> to spin up a server, with <b>Mockito-esque</b> expectations to match URLs, verbs and headers, then return the expected response.</p>
             <p>Capture the request so you can assert on the content, or just <b>verify</b> the call was made.</p>
             <hr>
-            <h3>Example</h3>
-            <p>As the library was written Test First, the repository is full of useful tests which serve as the most comprehensive documentation.</p>
-            <hr>
             <h3>Dependency</h3>
             <p>The library is available from Maven Central, and can be included in your projects dependencies</p>
-            <ul class="deps">
-                <li>groupId: com.pyruby</li>
-                <li>artifactId: java-stub-server</li>
-            </ul>
+<pre>
+    &lt;dependency>
+        &lt;groupId>com.pyruby&lt;/groupId>
+        &lt;artifactId>java-stub-server&lt;/artifactId>
+        &lt;version>0.12&lt;/version>
+    &lt;/dependency>
+</pre>
+            <hr>
+            <h3>Example</h3>
+            <p>
+                As the library was written Test First, the repository is full of useful tests which serve as the most comprehensive documentation.
+                Here are a few of the basics.
+            </p>
+            <h4>Expect a GET request</h4>
+            <pre>
+    @Test
+    public void myApplication_shouldGetTheCustomerFromTheCustomerReSTApi() {
+        Server server = new Server(44041);
+        server.start();
+        try {
+            server.expect(StubMethod.get("/customers/123")).thenReturn(200, "application/json", " ... ");
+
+            // call your application which should invoke the customer ReST api on port 44041
+            ...
+
+            server.verify();
+        } finally {
+            server.stop();
+        }
+    }
+            </pre>
+            <p>
+                This starts an HTTP server on port 44041, expects a GET request to http://localhost:44041/customers/123 and when it receives it,
+                responds with the supplied application/json responce, with a 200 response code.
+            </p>
+            <h4>Check a PUT sends the correct payload</h4>
+            <pre>
+    @Test
+    public void myApplication_shouldPutTheCustomerToTheCustomerReSTApi() {
+        Server server = new Server(44041);
+        server.start();
+        try {
+            StubMethod expectedCall = StubMethod.put("/customers/\\d")
+                .ifContentType("application/json")
+                .ifHeader("someHeader", "expectedValue");
+            server.expect(expectedCall).thenReturn(204);
+
+            // call your application which should invoke the customer ReST api on port 44041
+            ...
+
+            server.verify();
+            assertEquals(" expected customer ", expectedCall.bodyString());
+        } finally {
+            server.stop();
+        }
+    }
+            </pre>
+            <p>
+                This time, the expected call is a <strong>PUT</strong>, that expects a url <strong>http://localhost:44041/customers/{customerNumericId}</strong>. The PUT must have
+                a Content-Type of <strong>application/json</strong> with a header <strong>someHeader: expectedValue</strong>
+            </p>
+            <p>
+                Once called, the body that was passed by your application can be obtained and asserted against, either as raw bytes, or in this case
+                as a String.
+            </p>
+            <h4>HTTPS</h4>
+            <pre>
+    @Test
+    public void myApplication_shouldCallHTTPSReSTApi() {
+        HttpsSettings httpsSettings = new HttpsSettings(keystorePath, keystorePassword, keyPassword);
+        Server server = new Server(22043, httpsSettings);
+        server.start();
+        try {
+            // all the same expectations etc
+            ...
+        } finally {
+            server.stop();
+        }
+    }
+            </pre>
+            <p>The same assertions are available over SSL, by using the <strong>HttpsSettings</strong> parameter of the <strong>Server</strong> constructor.</p>
+            <hr>
         </div>
         <footer>
             &copy;PyRuby LTD 2013 - <a href="http://www.pyruby.com">website</a>
