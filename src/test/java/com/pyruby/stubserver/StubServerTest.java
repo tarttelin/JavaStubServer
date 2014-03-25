@@ -177,11 +177,21 @@ public class StubServerTest {
     }
 
     @Test
-    public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeader() throws IOException {
-        server.expect(get("/my/expected/context").ifHeader("x-test", "foobar"))
+    public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeaderPattern() throws IOException {
+        server.expect(get("/my/expected/context").ifHeader("x-test", "application/(json|xml)"))
                 .thenReturn(200, "application/json", "My expected response");
 
-        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "foobar")));
+        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "application/json")));
+
+        server.verify();
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAnExactHeader() throws IOException {
+        server.expect(get("/my/expected/context").ifExactHeader("x-test", "vnd.foo+json"))
+                .thenReturn(200, "application/json", "My expected response");
+
+        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "vnd.foo+json")));
 
         server.verify();
     }
