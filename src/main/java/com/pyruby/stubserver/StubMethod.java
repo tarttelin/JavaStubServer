@@ -1,8 +1,6 @@
 package com.pyruby.stubserver;
 
 import org.mortbay.jetty.HttpURI;
-import org.mortbay.jetty.Request;
-import org.mortbay.util.StringUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
@@ -21,7 +19,7 @@ public class StubMethod {
     private final HttpURI url;
     private final String method;
 
-    private final Map<String, String> headerExpectations = new HashMap<String, String>();
+    private final Map<String, HeaderExpectation> headerExpectations = new HashMap<String, HeaderExpectation>();
 
     /**
      * The headers received in the matched request.
@@ -128,7 +126,21 @@ public class StubMethod {
      * @return this
      */
     public StubMethod ifHeader(String key, String valueRegex) {
-        headerExpectations.put(key, valueRegex);
+        headerExpectations.put(key, new RegexHeaderExpectation(valueRegex));
+        return this;
+    }
+
+    /**
+     * Sets an expectation that requests will only be matched if they have a request header that matches
+     * a specified expression.
+     *
+     * @param key        the name of the header, e.g. "Content-Type". Note that this is canse-sensitive, although
+     *                   HTTP headers are generally not actually case-sensitive.
+     * @param value the exact value to be matched.
+     * @return this
+     */
+    public StubMethod ifExactHeader(String key, String value) {
+        headerExpectations.put(key, new LiteralHeaderExpectation(value));
         return this;
     }
 
@@ -140,7 +152,19 @@ public class StubMethod {
      * @return this
      */
     public StubMethod ifContentType(String valueRegex) {
-        headerExpectations.put("Content-Type", valueRegex);
+        headerExpectations.put("Content-Type", new RegexHeaderExpectation(valueRegex));
+        return this;
+    }
+
+    /**
+     * Sets an expectation that requests will only be matched if they have a content-type that matches
+     * a specified expression. This is a special case of {@link #ifHeader(String, String)}.
+     *
+     * @param value the exact value to be matched.
+     * @return this
+     */
+    public StubMethod ifExactContentType(String value) {
+        headerExpectations.put("Content-Type", new LiteralHeaderExpectation(value));
         return this;
     }
 
@@ -156,9 +180,9 @@ public class StubMethod {
             Map<String, Header> hdrs = copyTheRequestHeaders(httpServletRequest);
 
             for (String key : headerExpectations.keySet()) {
-                String exp = headerExpectations.get(key);
+                HeaderExpectation exp = headerExpectations.get(key);
                 Header act = hdrs.get(key);
-                if (act == null || !act.values.get(0).matches(exp)) {
+                if (act == null || !exp.matches(act.values.get(0))) {
                     return false;
                 }
             }
@@ -222,8 +246,8 @@ public class StubMethod {
         StringBuilder b = new StringBuilder(method);
         b.append(' ').append(url);
         for (String key : headerExpectations.keySet()) {
-            String exp = headerExpectations.get(key);
-            b.append(" where ").append(key).append(" matches ").append(exp);
+            HeaderExpectation exp = headerExpectations.get(key);
+            b.append(" where ").append(key).append(" matches ").append(exp.getExpectedValue());
         }
         return b.toString();
     }
