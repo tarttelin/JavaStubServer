@@ -21,7 +21,7 @@ Example test:<br>
      //assertions that Bob has the right values as returned from the external ReST api
      server.verify(); // check that all expectations were called
   } finally {
-     server.close();
+     server.stop();
   }
 ```
 With this approach, it feels more like a unit test, but it allows you to totally black box the system under test.
