@@ -380,6 +380,50 @@ public class StubServerTest {
     }
 
     @Test
+    public void waitOnCall_blocksUntilTheExpectationIsMet() throws InterruptedException {
+        final StubMethod expected = StubMethod.get("/foo");
+        server.expect(expected).delay(50, TimeUnit.MILLISECONDS).thenReturn(201);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    makeRequest("/foo", "GET");
+                } catch (IOException e) {
+                    // do nothing
+                }
+            }
+        }).start();
+
+        expected.waitOnCall();
+
+        server.verify();
+    }
+
+    @Test
+    public void waitOnCall_blocksForALimitedPeriodOfTime() throws InterruptedException {
+        final StubMethod expected = StubMethod.get("/foo");
+        server.expect(expected).delay(5, TimeUnit.MILLISECONDS).thenReturn(201);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    makeRequest("/foo", "GET");
+                } catch (IOException e) {
+                    // do nothing
+                }
+            }
+        }).start();
+
+        expected.waitOnCall();
+
+        server.verify();
+
+        expected.waitOnCall(50, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
     public void constructWithPort_shouldCauseServerToBindToThatPort() throws IOException {
         server.stop();
         server = new StubServer(48808, server.getHttpsSettings());

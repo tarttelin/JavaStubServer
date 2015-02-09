@@ -4,7 +4,7 @@ apply plugin: 'maven'
 
 archivesBaseName = 'java-stub-server'
 group = 'com.pyruby'
-version = '0.13'
+version = '0.14'
 
 repositories {
     mavenCentral()

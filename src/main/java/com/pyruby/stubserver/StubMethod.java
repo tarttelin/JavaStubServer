@@ -5,6 +5,8 @@ import org.mortbay.jetty.HttpURI;
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.pyruby.stubserver.Header.header;
 
@@ -18,6 +20,7 @@ import static com.pyruby.stubserver.Header.header;
 public class StubMethod {
     private final HttpURI url;
     private final String method;
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     private final Map<String, HeaderExpectation> headerExpectations = new HashMap<String, HeaderExpectation>();
 
@@ -134,7 +137,7 @@ public class StubMethod {
      * Sets an expectation that requests will only be matched if they have a request header that matches
      * a specified expression.
      *
-     * @param key        the name of the header, e.g. "Content-Type". Note that this is canse-sensitive, although
+     * @param key        the name of the header, e.g. "Content-Type". Note that this is case-sensitive, although
      *                   HTTP headers are generally not actually case-sensitive.
      * @param value the exact value to be matched.
      * @return this
@@ -195,6 +198,7 @@ public class StubMethod {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            latch.countDown();
         }
 
         return matchFound;
@@ -215,7 +219,7 @@ public class StubMethod {
         return headers;
     }
 
-        private void copyTheBody(HttpServletRequest httpServletRequest) throws IOException {
+    private void copyTheBody(HttpServletRequest httpServletRequest) throws IOException {
         BufferedInputStream in = new BufferedInputStream(httpServletRequest.getInputStream());
         body = copyBytes(in);
         in.close();
@@ -250,5 +254,13 @@ public class StubMethod {
             b.append(" where ").append(key).append(" matches ").append(exp.getExpectedValue());
         }
         return b.toString();
+    }
+
+    public void waitOnCall() throws InterruptedException {
+        latch.await();
+    }
+
+    public void waitOnCall(int period, TimeUnit unit) throws InterruptedException {
+        latch.await(period, unit);
     }
 }
