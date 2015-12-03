@@ -148,6 +148,35 @@ public class StubMethod {
     }
 
     /**
+     * Sets an expectation that requests will not be matched if they have a request header that matches
+     * a specified expression. To meet the expectation, the header must not match.
+     *
+     * @param key        the name of the header, e.g. "Content-Type". Note that this is canse-sensitive, although
+     *                   HTTP headers are generally not actually case-sensitive.
+     * @param valueRegex the pattern to be matched. Note that ".*" is useful for testing that a given header is
+     *                   actually absent.
+     * @return this
+     */
+    public StubMethod ifNotHeader(String key, String valueRegex) {
+        headerExpectations.put(key, new InverseHeaderExpectation(new RegexHeaderExpectation(valueRegex)));
+        return this;
+    }
+
+    /**
+     * Sets an expectation that requests will not be matched if they have a request header that matches
+     * a specified expression. To meet the expectation, the header must not match.
+     *
+     * @param key        the name of the header, e.g. "Content-Type". Note that this is case-sensitive, although
+     *                   HTTP headers are generally not actually case-sensitive.
+     * @param value the exact value to be matched.
+     * @return this
+     */
+    public StubMethod ifNotExactHeader(String key, String value) {
+        headerExpectations.put(key, new InverseHeaderExpectation(new LiteralHeaderExpectation(value)));
+        return this;
+    }
+
+    /**
      * Sets an expectation that requests will only be matched if they have a content-type that matches
      * a specified expression. This is a special case of {@link #ifHeader(String, String)}.
      *
@@ -251,7 +280,7 @@ public class StubMethod {
         b.append(' ').append(url);
         for (String key : headerExpectations.keySet()) {
             HeaderExpectation exp = headerExpectations.get(key);
-            b.append(" where ").append(key).append(" matches ").append(exp.getExpectedValue());
+            b.append(" where ").append(key).append(" must ").append(exp.getExpectedValue());
         }
         return b.toString();
     }

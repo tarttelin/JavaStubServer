@@ -1,7 +1,7 @@
 package com.pyruby.stubserver;
 
 public class RegexHeaderExpectation implements HeaderExpectation {
-    private String valueRegex;
+    private final String valueRegex;
 
     public RegexHeaderExpectation(String valueRegex){
         this.valueRegex = valueRegex;
@@ -14,6 +14,6 @@ public class RegexHeaderExpectation implements HeaderExpectation {
 
     @Override
     public String getExpectedValue() {
-        return valueRegex;
+        return "match " + valueRegex;
     }
 }

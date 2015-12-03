@@ -197,8 +197,28 @@ public class StubServerTest {
     }
 
     @Test
+    public void expect_shouldAcceptAGetRequestToAUrlThatDoesNotMatchAHeaderPattern() throws IOException {
+        server.expect(get("/my/expected/context").ifNotHeader("x-test", "application/(json|xml)"))
+                .thenReturn(200, "application/json", "My expected response");
+
+        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "application/svg+xml")));
+
+        server.verify();
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestToAUrlThatDoesNotMatchAnExactHeader() throws IOException {
+        server.expect(get("/my/expected/context").ifNotExactHeader("x-test", "vnd.foo+json"))
+                .thenReturn(200, "application/json", "My expected response");
+
+        makeRequest("/my/expected/context", "GET", "", headers(header("x-test", "vnd.bar+json")));
+
+        server.verify();
+    }
+
+    @Test
     public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedHeaderExpectations() throws IOException {
-        server.expect(get("/some/url").ifHeader("Content-Type", "foobar")).thenReturn(200, "text/html", "Got me");
+        server.expect(get("/some/url").ifHeader("Content-Type", "foo.*")).thenReturn(200, "text/html", "Got me");
 
         makeRequest("/some/url", "GET", "", headers(header("Content-Type", "stuff")));
 
@@ -207,7 +227,58 @@ public class StubServerTest {
         } catch (AssertionError e) {
             String message = e.getMessage();
             assertTrue(message, message.contains("/some/url"));
-            assertTrue(message, message.contains("where Content-Type matches foobar"));
+            assertTrue(message, message.contains("where Content-Type must match foo.*"));
+            return;
+        }
+        fail("Should not have met all expectations");
+    }
+
+    @Test
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedExactHeaderExpectations() throws IOException {
+        server.expect(get("/some/url").ifExactHeader("Content-Type", "foobar")).thenReturn(200, "text/html", "Got me");
+
+        makeRequest("/some/url", "GET", "", headers(header("Content-Type", "foobarfoo")));
+
+        try {
+            server.verify();
+        } catch (AssertionError e) {
+            String message = e.getMessage();
+            assertTrue(message, message.contains("/some/url"));
+            assertTrue(message, message.contains("where Content-Type must be foobar"));
+            return;
+        }
+        fail("Should not have met all expectations");
+    }
+
+    @Test
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedNotHeaderExpectations() throws IOException {
+        server.expect(get("/some/url").ifNotHeader("Content-Type", ".*")).thenReturn(200, "text/html", "Got me");
+
+        makeRequest("/some/url", "GET", "", headers(header("Content-Type", "foobar")));
+
+        try {
+            server.verify();
+        } catch (AssertionError e) {
+            String message = e.getMessage();
+            assertTrue(message, message.contains("/some/url"));
+            assertTrue(message, message.contains("where Content-Type must not match .*"));
+            return;
+        }
+        fail("Should not have met all expectations");
+    }
+
+    @Test
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedNotExactHeaderExpectations() throws IOException {
+        server.expect(get("/some/url").ifNotExactHeader("Content-Type", "foobar")).thenReturn(200, "text/html", "Got me");
+
+        makeRequest("/some/url", "GET", "", headers(header("Content-Type", "foobar")));
+
+        try {
+            server.verify();
+        } catch (AssertionError e) {
+            String message = e.getMessage();
+            assertTrue(message, message.contains("/some/url"));
+            assertTrue(message, message.contains("where Content-Type must not be foobar"));
             return;
         }
         fail("Should not have met all expectations");
