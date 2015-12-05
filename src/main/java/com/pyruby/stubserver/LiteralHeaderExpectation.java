@@ -1,7 +1,7 @@
 package com.pyruby.stubserver;
 
 public class LiteralHeaderExpectation implements HeaderExpectation {
-    private String expectedValue;
+    private final String expectedValue;
 
     public LiteralHeaderExpectation(String expectedValue) {
         this.expectedValue = expectedValue;
@@ -14,6 +14,6 @@ public class LiteralHeaderExpectation implements HeaderExpectation {
 
     @Override
     public String getExpectedValue() {
-        return expectedValue;
+        return "be " + expectedValue;
     }
 }
