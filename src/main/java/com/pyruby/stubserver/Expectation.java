@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by calling {@link StubServer#expect(StubMethod)}, the returned expectation is then used to define
@@ -25,7 +26,7 @@ public class Expectation {
 
     private final StubMethod stubbedMethod;
     private CannedResponse cannedResponse;
-    private boolean satisfied;
+    private AtomicBoolean satisfied = new AtomicBoolean(false);
     private long delayMillis = 0;
 
     Expectation(StubMethod stubbedMethod) {
@@ -111,9 +112,9 @@ public class Expectation {
     }
 
     boolean matches(HttpServletRequest httpServletRequest) {
-        if (satisfied) return false;
+        if (satisfied.get()) return false;
         boolean matched = stubMethodMatches(httpServletRequest);
-        if (matched) satisfied = true;
+        if (matched) satisfied.set(true);
         return matched;
     }
 
@@ -122,7 +123,7 @@ public class Expectation {
     }
 
     void verify() {
-        if (!satisfied) {
+        if (!satisfied.get()) {
             throw new AssertionError(stubbedMethod.toString());
         }
     }
