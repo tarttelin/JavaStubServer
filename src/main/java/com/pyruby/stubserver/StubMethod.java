@@ -12,10 +12,13 @@ import static com.pyruby.stubserver.Header.header;
 
 /**
  * A factory class for constructing the expectation for the {@link StubServer#expect} method. Only supports
- * the basic HEAD/GET/POST/PUT/DELETE methods.
+ * the basic HEAD/GET/POST/PUT/DELETE/TRACE/OPTIONS methods.
  * <p/>
  * After verification, if the request matched the expectation, the instances of this class will have captured
  * the request headers, the query parameters and the request body.
+ *
+ * Note that regular expressions can be used in the URL parameters of some of the methods below, with the
+ * additional requirement that they must start with "/".
  */
 public class StubMethod {
     private final HttpURI url;
@@ -37,7 +40,7 @@ public class StubMethod {
      */
     public byte[] body;
 
-    protected StubMethod(String method, String url) {
+    public StubMethod(String method, String url) {
         this.method = method;
         this.url = new HttpURI(url);
     }
@@ -239,11 +242,7 @@ public class StubMethod {
         while (headerNames.hasMoreElements()) {
             String headerName = (String) headerNames.nextElement();
             Enumeration headerValues = httpServletRequest.getHeaders(headerName);
-            List<String> headerStringValues = new ArrayList<String>();
-            while(headerValues.hasMoreElements()) {
-                headerStringValues.add((String) headerValues.nextElement());
-            }
-            headers.put(headerName, header(headerName, headerStringValues));
+            headers.put(headerName, header(headerName, headerValues));
         }
         return headers;
     }

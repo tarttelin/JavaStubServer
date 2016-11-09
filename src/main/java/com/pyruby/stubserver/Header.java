@@ -1,8 +1,6 @@
 package com.pyruby.stubserver;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public final class Header {
     public final String name;
@@ -14,6 +12,14 @@ public final class Header {
 
     public static Header header(String name, List<String> values) {
         return new Header(name, values);
+    }
+
+    public static Header header(String name, Enumeration values) {
+        List<String> headerStringValues = new ArrayList<String>();
+        while(values.hasMoreElements()) {
+            headerStringValues.add((String) values.nextElement());
+        }
+        return new Header(name, headerStringValues);
     }
 
     public static List<Header> headers(Header... hdr) {
