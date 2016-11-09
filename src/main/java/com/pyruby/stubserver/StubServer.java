@@ -8,8 +8,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.pyruby.stubserver.Header.header;
 
 /**
  * Stub server is intended to give a mockito-esque feel to a stubbed HTTP server.  This allows you to test
@@ -44,7 +47,6 @@ public class StubServer {
     private final HttpsSettings httpsSettings;
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
-    private Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(200, "text/html", "No expectation matched", null);
     private ProxyResponder proxy;
 
     /**
@@ -58,8 +60,9 @@ public class StubServer {
     /**
      * It's usually best to use ports that are above 1024.  If the port is already bound by another process, the server
      * won't start.
+     *
      * @param port the port that the stub server should bind to.  This should match the port your system under test is
-     * configured to call. If 0 is specified, an available ephemeral port is chosen automatically.
+     *             configured to call. If 0 is specified, an available ephemeral port is chosen automatically.
      */
     public StubServer(int port) {
         this(port, null);
@@ -68,8 +71,9 @@ public class StubServer {
     /**
      * Use this constructor if you want to handle SSL requests. Note that it's http OR https - if you need to handle both
      * just spin up two StubServer instances!
-     * @param port port to bind to. This should match the port that your system under test is configured to call.
-     *        If 0 is specified, an available ephemeral port is chosen automatically.
+     *
+     * @param port          port to bind to. This should match the port that your system under test is configured to call.
+     *                      If 0 is specified, an available ephemeral port is chosen automatically.
      * @param httpsSettings The SSL keystore settings to use.
      */
     public StubServer(int port, HttpsSettings httpsSettings) {
@@ -92,10 +96,9 @@ public class StubServer {
     }
 
     private void createServer() {
-        if(httpsSettings != null) {
+        if (httpsSettings != null) {
             createSslServer();
-        }
-        else {
+        } else {
             createPlainServer();
         }
     }
@@ -138,7 +141,7 @@ public class StubServer {
      * Specify the method, i.e. {@link StubMethod#get} including context path you expect your application
      * to call.  The resulting {@link Expectation} is used to allow you to specify what should happen when
      * a subsequent request matches the stubbedMethod.
-     *
+     * <p>
      * This is different to expect(StubMethod) in that the StubMethod will match against multiple requests
      * to the StubServer and will never fail verification.
      *
@@ -166,6 +169,7 @@ public class StubServer {
 
     /**
      * Delegate all unmatched calls to the target server.
+     *
      * @param targetServer the base URL of the target server, in the format http://myserver:port
      */
     public void proxy(String targetServer) {
@@ -187,9 +191,9 @@ public class StubServer {
      */
     public void clearExpectations() {
         expectations.clear();
-	}
-	
-   /**
+    }
+
+    /**
      * Returns the assigned port number. This is useful when the server was created with port number 0 so that the actual
      * ephemeral port number can be retrieved.
      */
@@ -213,8 +217,21 @@ public class StubServer {
                 proxy.matches(httpServletRequest);
                 proxy.respond(httpServletResponse);
             } else {
-                nullResponse.respond(httpServletResponse);
+                reportError(httpServletRequest, httpServletResponse);
             }
+        }
+
+        private void reportError(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
+            StringBuilder message = new StringBuilder("No expectation matched for:\n");
+            message.append(httpServletRequest.getMethod()).append(" ").append(httpServletRequest.getRequestURI()).append("\n");
+            Enumeration headerNames = httpServletRequest.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String headerName = (String) headerNames.nextElement();
+                Enumeration headerValues = httpServletRequest.getHeaders(headerName);
+                message.append(header(headerName, headerValues)).append("\n");
+            }
+            Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(404, "text/plain", message.toString(), null);
+            nullResponse.respond(httpServletResponse);
         }
     }
 
