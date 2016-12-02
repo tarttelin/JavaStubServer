@@ -46,11 +46,43 @@ public class StubServerTest {
 
         TestStubResponse response = makeRequest("/my/request", "GET");
 
-        assertEquals(404, response.responseCode);
         assertEquals("text/plain", response.contentType);
         String body = response.bodyString();
         assertTrue(body, body.contains("No expectation matched for"));
         assertTrue(body, body.contains("GET /my/request"));
+        assertTrue(body, body.contains("User-Agent: ")); // various other headers too
+    }
+
+    @Test
+    public void expect_shouldRespondWithInformativeMessageWithQueryString_whenNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation?p=1")).thenReturn(201);
+
+        TestStubResponse response = makeRequest("/my/request?q=1", "GET");
+
+        assertEquals("text/plain", response.contentType);
+        String body = response.bodyString();
+        assertTrue(body, body.contains("No expectation matched for"));
+        assertTrue(body, body.contains("GET /my/request?q=1"));
+        assertTrue(body, body.contains("User-Agent: ")); // various other headers too
+    }
+
+    @Test
+    public void expect_shouldRespondWithDefaultStatus_whenNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation")).thenReturn(201);
+
+        TestStubResponse response = makeRequest("/my/request", "GET");
+
+        assertEquals(200, response.responseCode);
+    }
+
+    @Test
+    public void expect_shouldRespondWithSpecifiedStatus_whenItHasBeenSet_andNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation")).thenReturn(201);
+        server.setStatusIfUnmatched(404);
+
+        TestStubResponse response = makeRequest("/my/request", "GET");
+
+        assertEquals(404, response.responseCode);
     }
 
     @Test

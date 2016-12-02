@@ -24,8 +24,8 @@ import static com.pyruby.stubserver.Header.header;
  * StubServer is intended to simplify for you.
  * <p>
  * Example test:<br>
- *   Deploy your web app with a config file that declares that the ReST api is accessible on http://localhost:21435</li>
- *   <pre>
+ * Deploy your web app with a config file that declares that the ReST api is accessible on http://localhost:21435</li>
+ * <pre>
  *   StubServer server = new StubServer(21435); // matching port
  *   server.start();
  *   server.expect(get("/api/customer/Bob")).thenReturn(200, "application/xml","&lt;customer>&lt;name>Bob&lt;/name>&lt;/customer>");
@@ -48,6 +48,7 @@ public class StubServer {
     private Server server;
     private List<Expectation> expectations = new LinkedList<Expectation>();
     private ProxyResponder proxy;
+    private int statusIfUnmatched = 200;
 
     /**
      * Provides a shortcut for <code>new StubServer(0)</code>, which creates an instance using any free ephemeral port.
@@ -205,6 +206,21 @@ public class StubServer {
         return httpsSettings;
     }
 
+    /**
+     * Gets the status code returned when no expectation is matched. By default this value is 200.
+     */
+    public int getStatusIfUnmatched() {
+        return statusIfUnmatched;
+    }
+
+    /**
+     * Sets the status code returned when no expectation is matched. By default this value is 200. If you need
+     * unmatched requests to appear as errors, you should set this to 404 or any other 4xx/5xx code you need.
+     */
+    public void setStatusIfUnmatched(int statusIfUnmatched) {
+        this.statusIfUnmatched = statusIfUnmatched;
+    }
+
     private class StubHandler extends AbstractHandler {
         public void handle(String target, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, int dispatch) throws IOException, ServletException {
             for (Expectation expected : expectations) {
@@ -223,14 +239,18 @@ public class StubServer {
 
         private void reportError(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
             StringBuilder message = new StringBuilder("No expectation matched for:\n");
-            message.append(httpServletRequest.getMethod()).append(" ").append(httpServletRequest.getRequestURI()).append("\n");
+            message.append(httpServletRequest.getMethod()).append(" ").append(httpServletRequest.getRequestURI());
+            if (httpServletRequest.getQueryString() != null) {
+                message.append('?').append(httpServletRequest.getQueryString());
+            }
+            message.append("\n");
             Enumeration headerNames = httpServletRequest.getHeaderNames();
             while (headerNames.hasMoreElements()) {
                 String headerName = (String) headerNames.nextElement();
                 Enumeration headerValues = httpServletRequest.getHeaders(headerName);
                 message.append(header(headerName, headerValues)).append("\n");
             }
-            Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(404, "text/plain", message.toString(), null);
+            Expectation.CannedResponse nullResponse = new Expectation.CannedResponse(statusIfUnmatched, "text/plain", message.toString(), null);
             nullResponse.respond(httpServletResponse);
         }
     }
