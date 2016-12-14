@@ -18,8 +18,8 @@ import static org.junit.Assert.*;
 
 public class StubServerTest {
 
-    protected String baseUrl = "http://localhost:";
-    protected StubServer server;
+    String baseUrl = "http://localhost:";
+    StubServer server;
 
     @Before
     public void setUp() throws IOException {
@@ -38,6 +38,71 @@ public class StubServerTest {
         TestStubResponse response = makeRequest("", "GET");
 
         assertNotNull(response);
+    }
+
+    @Test
+    public void expect_shouldRespondWithInformativeMessage_whenNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation")).thenReturn(201);
+
+        TestStubResponse response = makeRequest("/my/request", "GET");
+
+        assertEquals("text/plain", response.contentType);
+        String body = response.bodyString();
+        assertTrue(body, body.contains("No expectation matched for"));
+        assertTrue(body, body.contains("GET /my/request"));
+        assertTrue(body, body.contains("User-Agent: ")); // various other headers too
+    }
+
+    @Test
+    public void expect_shouldRespondWithInformativeMessageWithQueryString_whenNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation?p=1")).thenReturn(201);
+
+        TestStubResponse response = makeRequest("/my/request?q=1", "GET");
+
+        assertEquals("text/plain", response.contentType);
+        String body = response.bodyString();
+        assertTrue(body, body.contains("No expectation matched for"));
+        assertTrue(body, body.contains("GET /my/request?q=1"));
+        assertTrue(body, body.contains("User-Agent: ")); // various other headers too
+    }
+
+    @Test
+    public void expect_shouldRespondWithDefaultStatus_whenNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation")).thenReturn(201);
+
+        TestStubResponse response = makeRequest("/my/request", "GET");
+
+        assertEquals(200, response.responseCode);
+    }
+
+    @Test
+    public void expect_shouldRespondWithSpecifiedStatus_whenItHasBeenSet_andNoExpectationIsMatched() throws IOException {
+        server.expect(get("/my/expectation")).thenReturn(201);
+        server.setStatusIfUnmatched(404);
+
+        TestStubResponse response = makeRequest("/my/request", "GET");
+
+        assertEquals(404, response.responseCode);
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestToAFullUrlAndThenReturnTheExpectedResponse_for200() throws IOException {
+        server.expect(get("http://example.com/my/expected/context?q=123")).thenReturn(200, "application/json", "My expected 200 response");
+
+        TestStubResponse response = makeRequest("/my/expected/context?q=123", "GET");
+
+        assertEquals(200, response.responseCode);
+        assertEquals("My expected 200 response", response.bodyString());
+    }
+
+    @Test
+    public void expect_shouldAcceptAGetRequestToAFullUrlAndThenReturnTheExpectedResponse_for500() throws IOException {
+        server.expect(get("http://example.com/my/expected/context?q=123")).thenReturn(500, "application/json", "My expected 500 response");
+
+        TestStubResponse response = makeRequest("/my/expected/context?q=123", "GET");
+
+        assertEquals(500, response.responseCode);
+        assertEquals("My expected 500 response", response.bodyString());
     }
 
     @Test
@@ -177,6 +242,16 @@ public class StubServerTest {
     }
 
     @Test
+    public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAURIPattern() throws IOException {
+        server.expect(get("/.*/[^/]+/context$"))
+                .thenReturn(200, "application/json", "My expected response");
+
+        makeRequest("/my/expected/context", "GET");
+
+        server.verify();
+    }
+
+    @Test
     public void expect_shouldAcceptAGetRequestToAUrlThatMatchesAHeaderPattern() throws IOException {
         server.expect(get("/my/expected/context").ifHeader("x-test", "application/(json|xml)"))
                 .thenReturn(200, "application/json", "My expected response");
@@ -217,6 +292,22 @@ public class StubServerTest {
     }
 
     @Test
+    public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedURIExpectations() throws IOException {
+        server.expect(get("/.*/[^/]+/content$")).thenReturn(200, "text/html", "Got me");
+
+        makeRequest("/my/expected/context", "GET", "", headers(header("Content-Type", "stuff")));
+
+        try {
+            server.verify();
+        } catch (AssertionError e) {
+            String message = e.getMessage();
+            assertTrue(message, message.contains("GET /.*/[^/]+/content$"));
+            return;
+        }
+        fail("Should not have met all expectations");
+    }
+
+    @Test
     public void verify_shouldRaiseAnAssertionException_givenThereAreUnsatisfiedHeaderExpectations() throws IOException {
         server.expect(get("/some/url").ifHeader("Content-Type", "foo.*")).thenReturn(200, "text/html", "Got me");
 
@@ -226,7 +317,7 @@ public class StubServerTest {
             server.verify();
         } catch (AssertionError e) {
             String message = e.getMessage();
-            assertTrue(message, message.contains("/some/url"));
+            assertTrue(message, message.contains("GET /some/url"));
             assertTrue(message, message.contains("where Content-Type must match foo.*"));
             return;
         }
@@ -523,7 +614,7 @@ public class StubServerTest {
     }
 
     private TestStubResponse makeRequest(String path, String method, String body) throws IOException {
-        return makeRequest(path, method, body, new ArrayList<Header>());
+        return makeRequest(path, method, Expectation.asBytes(body), new ArrayList<Header>());
     }
 
     private TestStubResponse makeRequest(String path, String method, String body, String contentType) throws IOException {
@@ -539,30 +630,30 @@ public class StubServerTest {
                                          List<Header> headers) throws IOException {
         return makeRequest(path, method, requestBody, headers, server.getLocalPort());
     }
+
     private TestStubResponse makeRequest(String path, String method, byte[] requestBody,
                                          List<Header> headers, int port) throws IOException {
         URL url = new URL(baseUrl + port + path);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod(method);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod(method);
         for (Header header : headers) {
             for (String headerValue : header.values) {
-                conn.addRequestProperty(header.name, headerValue);
+                connection.addRequestProperty(header.name, headerValue);
             }
         }
         if (requestBody != null && requestBody.length > 0 && !method.equals("DELETE")) {
-            conn.setDoOutput(true);
-            BufferedOutputStream writer = new BufferedOutputStream(conn.getOutputStream());
+            connection.setDoOutput(true);
+            BufferedOutputStream writer = new BufferedOutputStream(connection.getOutputStream());
             writer.write(requestBody);
             writer.flush();
             writer.close();
         }
-        byte[] bytes = new byte[0];
-        if (conn.getResponseCode() < 300) {
-            BufferedInputStream in = new BufferedInputStream(conn.getInputStream());
-            bytes = copyBytes(in);
-            in.close();
-        }
-        return new TestStubResponse(conn.getResponseCode(), conn.getHeaderFields(), conn.getContentType(), bytes);
+        int statusCode = connection.getResponseCode();
+        InputStream is = statusCode < 300 ? connection.getInputStream() : connection.getErrorStream();
+        BufferedInputStream in = new BufferedInputStream(is);
+        byte[] bytes = copyBytes(in);
+        in.close();
+        return new TestStubResponse(statusCode, connection.getHeaderFields(), connection.getContentType(), bytes);
     }
 
     private byte[] copyBytes(InputStream input) throws IOException {
